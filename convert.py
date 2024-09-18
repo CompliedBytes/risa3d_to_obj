@@ -140,9 +140,19 @@ def GetMembers(lines):
             member_arr.append(curr_line)
     return member_arr
 
+def GetNodePos(Nodes, ID):
+    Pos_arr = []
+    for node in Nodes:
+        if node[0] == 'N' + ID:
+            #           x          y        z
+            Pos_arr = [node[2], node[3], node[4]]
+    return Pos_arr
+
 def Translate_Sides(Nodes, Members):
         for member in Members:
-            print(member[0])
+            Node1 = GetNodePos(Nodes, member[3])
+            Node2 = GetNodePos(Nodes, member[4])
+            print(str(member[0]) + ' Node 1: ' + str(Node1) + ' Node 2: ' + str(Node2))
 
 
 def extractHeadings(file):
