@@ -78,15 +78,14 @@ def GetMembers(lines):
         elif '[.END_MEMBERS_MAIN_DATA]' in line:
             member_flag = False
             break
-        elif member_flag == True:
+        if member_flag == True:
             curr_line = line.split('" ')
             curr_len = len(curr_line)
             flag_num = 0
             while (flag_num < curr_len):
                 if flag_num == 0:
-                    temp_flag = curr_line[flag_num].split(' ')[0]
-                    temp_flag = temp_flag.split('"')[1]
-                    curr_line[flag_num] = temp_flag
+                    curr_line[flag_num] = curr_line[flag_num].replace('"', '')
+                    curr_line[flag_num] = curr_line[flag_num].replace(' ', '')
                     flag_num += 1
                 elif flag_num == 1:
                     member_name = ''
@@ -137,13 +136,19 @@ def GetMembers(lines):
                     flag_num += 1
                 else:
                     flag_num += 1
-        member_arr.append(curr_line)
+            member_arr.append(curr_line)
     return member_arr
 
+def Translate_Sides(Nodes, Members):
+        for member in Members:
+            print(member[0])
 
 with open("2024 SB V4.5.r3d") as file:
     data=file.read().split('\n')
     #print(GetUnits(data))
     #print(GetNodes(data))
-    print(GetMembers(data))
+    #print(GetMembers(data))
     #print(data)
+    Nodes = GetNodes(data)
+    Members = GetMembers(data)
+    Translate_Sides(Nodes, Members)
