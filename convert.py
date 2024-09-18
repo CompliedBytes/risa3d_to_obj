@@ -71,6 +71,7 @@ def GetNodes(lines):
 def GetMembers(lines):
     member_arr = []
     member_flag = False
+    curr_line = []
     for line in lines:
         if '[.MEMBERS_MAIN_DATA]' in line:
             member_flag = True
@@ -136,12 +137,13 @@ def GetMembers(lines):
                     flag_num += 1
                 else:
                     flag_num += 1
-            print(curr_line)
+        member_arr.append(curr_line)
+    return member_arr
 
 
 with open("2024 SB V4.5.r3d") as file:
     data=file.read().split('\n')
     #print(GetUnits(data))
     #print(GetNodes(data))
-    GetMembers(data)
+    print(GetMembers(data))
     #print(data)
