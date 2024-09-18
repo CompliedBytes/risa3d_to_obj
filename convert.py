@@ -2,6 +2,7 @@ import os
 import math
 import tkinter
 from tkinter import filedialog
+import re
 
 def GetUnits(lines):
     units_num = []
@@ -65,9 +66,22 @@ def GetNodes(lines):
             node_arr.append(curr_node)
     return node_arr
 
-with open("2024 SB V4.5.r3d") as file:
+
+def extractHeadings(file):
+    data = file.read()
+    pattern = r'\[(?!\.{0,2}END)[^\]]*\]'
+    # this regex matches all strings inside brackets that dont have "END" at the begining
+    matches = re.findall(pattern,data)
+    headings = [match[1:-1] for match in matches]
+    return headings
+
+f = open("2024 SB V4.5.r3d","r")
+
+parseData(f)
+
+with open("2024 SB V4.5.r3d","r") as file:
     data=file.read().split('\n')
-    print(GetUnits(data))
-    print(GetNodes(data))
+    #print(GetUnits(data))
+    #print(GetNodes(data))
 
     #print(data)
