@@ -4,6 +4,7 @@ import tkinter
 from tkinter import filedialog
 
 def GetUnits(lines):
+    # Unit Format: length_units  dim_units
     units_num = []
     units_text = []
     num_lines = len(lines)
@@ -37,6 +38,7 @@ def GetUnits(lines):
     return units_text
 
 def GetNodes(lines):
+    # Node Format: Name/ID  X coord, Y coord, Z coord
     node_arr = []
     node_flag = False
     for line in lines:
@@ -44,6 +46,7 @@ def GetNodes(lines):
             node_flag = True
         elif '[END_NODES]' in line:
             node_flag = False
+            break
         elif node_flag == True:
             curr_node = line.split('   ')
             curr_len = len(curr_node)
@@ -65,9 +68,80 @@ def GetNodes(lines):
             node_arr.append(curr_node)
     return node_arr
 
+def GetMembers(lines):
+    member_arr = []
+    member_flag = False
+    for line in lines:
+        if '[.MEMBERS_MAIN_DATA]' in line:
+            member_flag = True
+        elif '[.END_MEMBERS_MAIN_DATA]' in line:
+            member_flag = False
+            break
+        elif member_flag == True:
+            curr_line = line.split('" ')
+            curr_len = len(curr_line)
+            flag_num = 0
+            while (flag_num < curr_len):
+                if flag_num == 0:
+                    temp_flag = curr_line[flag_num].split(' ')[0]
+                    temp_flag = temp_flag.split('"')[1]
+                    curr_line[flag_num] = temp_flag
+                    flag_num += 1
+                elif flag_num == 1:
+                    member_name = ''
+                    temp_flag = curr_line[flag_num].split(' ')
+                    temp_flag[0] = temp_flag[0].split('"')[1]
+                    while ('' in temp_flag):
+                        temp_flag.remove('')
+                    temp_len = len(temp_flag)
+                    curr_idx = 0
+                    while (curr_idx < temp_len):
+                        if curr_idx == temp_len - 1:
+                            member_name += temp_flag[curr_idx]
+                        else:
+                            member_name += temp_flag[curr_idx]
+                            member_name += ' '
+                        curr_idx += 1
+                    curr_line[flag_num] = member_name
+                    flag_num += 1
+                elif flag_num == 2:
+                    temp_flag = curr_line[flag_num].split(' ')[0]
+                    temp_flag = temp_flag.split('"')[1]
+                    curr_line[flag_num] = temp_flag
+                    flag_num += 1
+                elif flag_num == 3:
+                    temp_flag = curr_line[flag_num].split(' ')
+                    while '' in temp_flag:
+                        temp_flag.remove('')
+                    temp_len = len(temp_flag)
+                    curr_len += temp_len - 1
+                    for flag in temp_flag:
+                        if flag_num == 3:
+                            curr_line[flag_num] = flag
+                        else:
+                            curr_line.insert(flag_num, flag)
+                        flag_num += 1
+                    print(curr_line[flag_num])
+                elif ' ' in curr_line[flag_num]:
+                    temp_flag = curr_line[flag_num].replace(' ','')
+                    if temp_flag == '':
+                        curr_line.remove(curr_line[flag_num])
+                        curr_len -= 1
+                    else:
+                        curr_line[flag_num] = temp_flag
+                        flag_num += 1
+                elif ';' in curr_line[flag_num]:
+                    temp_flag = curr_line[flag_num].replace(';','')
+                    curr_line[flag_num] = temp_flag
+                    flag_num += 1
+                else:
+                    flag_num += 1
+            print(curr_line)
+
+
 with open("2024 SB V4.5.r3d") as file:
     data=file.read().split('\n')
-    print(GetUnits(data))
-    print(GetNodes(data))
-
+    #print(GetUnits(data))
+    #print(GetNodes(data))
+    GetMembers(data)
     #print(data)
