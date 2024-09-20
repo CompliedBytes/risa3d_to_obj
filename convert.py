@@ -147,30 +147,79 @@ def GetMembers(lines):
 
 def GetNodePos(Nodes, ID):
     #print(Nodes)
-    Pos = {'label': Nodes[int(ID)][0],'x': Nodes[int(ID)][1], 'y': Nodes[int(ID)][2], 'z': Nodes[int(ID)][3]}
+    Pos = {'label': Nodes[int(ID)][0],'x': float(Nodes[int(ID)][1]), 'y': float(Nodes[int(ID)][2]), 'z': float(Nodes[int(ID)][3])}
     return Pos
 
 def GetMemberAxis(Node1, Node2):
-    if Node1['x'] == Node2['x']:
+    if Node1['y'] == Node2['y'] and Node1['z'] == Node2['z']:
         return 'X-Axis'
-    elif Node1['y'] == Node2['y']:
+    elif Node1['x'] == Node2['x'] and Node1['z'] == Node2['z']:
         return 'Y-Axis'
-    elif Node1['z'] == Node2['z']:
+    elif Node1['x'] == Node2['x'] and Node1['y'] == Node2['y'] :
         return 'Z-Axis'
     else:
         return 'No Axis'
-    
-def Translate_Sides(Nodes, Members):
-        line_no = 0
-        while line_no < len(Members):
-            Node1 = GetNodePos(Nodes, Members[line_no][3])
-            Node2 = GetNodePos(Nodes, Members[line_no][4])
-            MemberAxis = GetMemberAxis(Node1, Node2)
-            print('Member ' + Members[line_no][0] + ': ')
-            print('Axis: ' + MemberAxis)
+
+def GetOffsets(Shape, MemberRot):
+    # Splits into Height, Width, and Wall Thickness (if applicable)
+    MatDim = Shape.split('X')
+    Temp = MatDim[0]
+    Temp = Temp.replace('RE', '')
+    MatDim[0] = Temp
+    if float(MemberRot) == 90.0 or float(MemberRot) == 270.0:
+        temp_height = MatDim[0]
+        temp_width = MatDim[1]
+        MatDim[0] = float(temp_width)/2
+        MatDim[1] = float(temp_height)/2
+    else:
+        MatDim[0] = float(MatDim[0])/2
+        MatDim[1] = float(MatDim[1])/2
+    if len(MatDim) == 3:
+        MatDim[2] = float(MatDim[2])
+    return MatDim
+
+def GetXYTheta(Node1, Node2):
+    if ((Node2['x'] - Node1['x']) != 0):
+        Theta = math.atan((Node2['y'] - Node1['y'])/(Node2['x'] - Node1['x'])) * 180/math.pi
+    else:
+        Theta = 0
+    return Theta
+
+def GetXZTheta(Node1, Node2):
+    if ((Node2['x'] - Node1['x']) != 0):
+        Theta = math.atan((Node2['z'] - Node1['z'])/(Node2['x'] - Node1['x'])) * 180/math.pi
+    else:
+        Theta = 0
+    return Theta
+def GetYZTheta(Node1, Node2):
+    if ((Node2['z'] - Node1['z']) != 0):
+        Theta = math.atan((Node2['y'] - Node1['y'])/(Node2['z'] - Node1['z'])) * 180/math.pi
+    else:
+        Theta = 0
+    return Theta
+
+def Translate_Points(Nodes, Members):
+        line_no = -1
+        while line_no < len(Members) - 1:
+            line_no += 1
+            NodePos1 = GetNodePos(Nodes, Members[line_no][3])
+            NodePos2 = GetNodePos(Nodes, Members[line_no][4])
+            MemberAxis = GetMemberAxis(NodePos1, NodePos2)
+            if 1 == 1:#MemberAxis == 'X-Axis' and int(NodePos1['z']) == 0:
+                Offset = GetOffsets(Members[line_no][2], Members[line_no][6])
+                XYTheta = GetXYTheta(NodePos1, NodePos2)
+                XZTheta = GetXZTheta(NodePos1, NodePos2)
+                YZTheta = GetYZTheta(NodePos1, NodePos2)
+                print('Member ' + Members[line_no][0] + ': ')
+                print('Axis: ' + MemberAxis)
+                print('NodePos1: ' + str(NodePos1['z']))
+                print('Offsets: ' + str(Offset))
+                print('XYTheta: ' + str(XYTheta))
+                print('XZTheta: ' + str(XZTheta))
+                print('YZTheta: ' + str(YZTheta))
             #print('Node ' + Node1['label'] + ': X: ' + Node1['x'] + ': Y: ' + Node1['y'] + ': Z: ' + Node1['z'])
             #print('Node ' + Node2['label'] + ': X: ' + Node2['x'] + ': Y: ' + Node2['y'] + ': Z: ' + Node2['z'])
-            line_no += 1
+            
             
 
 def extractHeadings(file):
@@ -194,4 +243,4 @@ with open("2024 SB V4.5.r3d","r") as file:
     #print(Nodes)
     Members = GetMembers(data)
     #print(Members)
-    Translate_Sides(Nodes, Members)
+    Translate_Points(Nodes, Members)
