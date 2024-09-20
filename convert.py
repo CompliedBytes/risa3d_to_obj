@@ -18,30 +18,31 @@ def GetUnits(lines):
     
     #Check length_units and translate into text-based flags.
     if units_num[1] == '0':
-        units_text.append('ft')
+        units_text['length_units'] = 'ft'
     elif units_num[1] == '1':
-        units_text.append('in')
+        units_text['length_units'] = 'in'
     elif units_num[1] == '2':
-        units_text.append('m')
+        units_text['length_units'] = 'm'
     elif units_num[1] == '3':
-        units_text.append('cm')
+        units_text['length_units'] = 'cm'
     elif units_num[1] == '4':
-        units_text.append('mm')
+        units_text['length_units'] = 'mm'
     
     #Check dim_units and translate into text-based flags.
     if units_num[1] == '0':
-        units_text.append('in')
+        units_text['dim_units'] = 'in'
     elif units_num[1] == '1':
-        units_text.append('cm')
+        units_text['dim_units'] = 'cm'
     elif units_num[1] == '2':
-        units_text.append('mm')
+        units_text['dim_units'] = 'mm'
     
     return units_text
 
 def GetNodes(lines):
     # Node Format: Name/ID  X coord, Y coord, Z coord
-    node_arr = []
+    node_dict = {}
     node_flag = False
+    line_no = 1
     for line in lines:
         if '[NODES]' in line:
             node_flag = True
@@ -66,20 +67,23 @@ def GetNodes(lines):
                 if ';' in flag:
                     flag = flag.split(';')[0]
                 curr_node.append(flag)
-            node_arr.append(curr_node)
-    return node_arr
+            node_dict[line_no] = curr_node
+            line_no += 1
+    #print(node_dict)
+    return node_dict
 
 def GetMembers(lines):
-    member_arr = []
+    member_dict = {}
     member_flag = False
     curr_line = []
+    line_no = 0
     for line in lines:
         if '[.MEMBERS_MAIN_DATA]' in line:
             member_flag = True
         elif '[.END_MEMBERS_MAIN_DATA]' in line:
             member_flag = False
             break
-        if member_flag == True:
+        elif member_flag == True:
             curr_line = line.split('" ')
             curr_len = len(curr_line)
             flag_num = 0
@@ -122,7 +126,6 @@ def GetMembers(lines):
                         else:
                             curr_line.insert(flag_num, flag)
                         flag_num += 1
-                    print(curr_line[flag_num])
                 elif ' ' in curr_line[flag_num]:
                     temp_flag = curr_line[flag_num].replace(' ','')
                     if temp_flag == '':
@@ -137,16 +140,14 @@ def GetMembers(lines):
                     flag_num += 1
                 else:
                     flag_num += 1
-            member_arr.append(curr_line)
-    return member_arr
+            member_dict[line_no] = curr_line
+            line_no += 1
+    return member_dict
 
 def GetNodePos(Nodes, ID):
-    Pos_arr = []
-    for node in Nodes:
-        if node[0] == 'N' + ID:
-            #           x          y        z
-            Pos_arr = [node[2], node[3], node[4]]
-    return Pos_arr
+    #print(Nodes)
+    Pos = {'label': Nodes[int(ID)][0],'x': Nodes[int(ID)][1], 'y': Nodes[int(ID)][2], 'z': Nodes[int(ID)][3]}
+    return Pos
 
 def Translate_Sides(Nodes, Members):
         for member in Members:
@@ -165,7 +166,7 @@ def extractHeadings(file):
 
 f = open("2024 SB V4.5.r3d","r")
 
-parseData(f)
+#parseData(f)
 
 with open("2024 SB V4.5.r3d","r") as file:
     data=file.read().split('\n')
@@ -175,4 +176,9 @@ with open("2024 SB V4.5.r3d","r") as file:
     #print(data)
     Nodes = GetNodes(data)
     Members = GetMembers(data)
-    Translate_Sides(Nodes, Members)
+    #Translate_Sides(Nodes, Members)
+    Node1 = GetNodePos(Nodes, Members[0][3])
+    Node2 = GetNodePos(Nodes, Members[0][4])
+    print('Member ' + str(Members[0][0]) + ': ')
+    print('Node ' + Node1['label'] + ': X: ' + Node1['x'] + ': Y: ' + Node1['y'] + ': Z: ' + Node1['z'])
+    print('Node ' + Node2['label'] + ': X: ' + Node2['x'] + ': Y: ' + Node2['y'] + ': Z: ' + Node2['z'])
