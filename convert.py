@@ -165,9 +165,9 @@ def Translate_Sides(Nodes, Members):
         while line_no < len(Members):
             Node1 = GetNodePos(Nodes, Members[line_no][3])
             Node2 = GetNodePos(Nodes, Members[line_no][4])
-            
+            MemberAxis = GetMemberAxis(Node1, Node2)
             print('Member ' + Members[line_no][0] + ': ')
-            print('Axis: ' + GetMemberAxis(Node1, Node2))
+            print('Axis: ' + MemberAxis)
             #print('Node ' + Node1['label'] + ': X: ' + Node1['x'] + ': Y: ' + Node1['y'] + ': Z: ' + Node1['z'])
             #print('Node ' + Node2['label'] + ': X: ' + Node2['x'] + ': Y: ' + Node2['y'] + ': Z: ' + Node2['z'])
             line_no += 1
