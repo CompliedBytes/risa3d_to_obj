@@ -7,7 +7,7 @@ import re
 def GetUnits(lines):
     # Unit Format: length_units  dim_units
     units_num = []
-    units_text = []
+    units_text = {}
     num_lines = len(lines)
     curr_line = 0
     for line in lines:
@@ -69,7 +69,7 @@ def GetNodes(lines):
                 curr_node.append(flag)
             node_dict[line_no] = curr_node
             line_no += 1
-    #print(node_dict)
+    #print('Node Dict Length: ' + str(len(node_dict)))
     return node_dict
 
 def GetMembers(lines):
@@ -142,6 +142,7 @@ def GetMembers(lines):
                     flag_num += 1
             member_dict[line_no] = curr_line
             line_no += 1
+    #print('Member Dict Length: ' + str(len(member_dict)))
     return member_dict
 
 def GetNodePos(Nodes, ID):
@@ -149,12 +150,28 @@ def GetNodePos(Nodes, ID):
     Pos = {'label': Nodes[int(ID)][0],'x': Nodes[int(ID)][1], 'y': Nodes[int(ID)][2], 'z': Nodes[int(ID)][3]}
     return Pos
 
+def GetMemberAxis(Node1, Node2):
+    if Node1['x'] == Node2['x']:
+        return 'X-Axis'
+    elif Node1['y'] == Node2['y']:
+        return 'Y-Axis'
+    elif Node1['z'] == Node2['z']:
+        return 'Z-Axis'
+    else:
+        return 'No Axis'
+    
 def Translate_Sides(Nodes, Members):
-        for member in Members:
-            Node1 = GetNodePos(Nodes, member[3])
-            Node2 = GetNodePos(Nodes, member[4])
-            print(str(member[0]) + ' Node 1: ' + str(Node1) + ' Node 2: ' + str(Node2))
-
+        line_no = 0
+        while line_no < len(Members):
+            Node1 = GetNodePos(Nodes, Members[line_no][3])
+            Node2 = GetNodePos(Nodes, Members[line_no][4])
+            
+            print('Member ' + Members[line_no][0] + ': ')
+            print('Axis: ' + GetMemberAxis(Node1, Node2))
+            #print('Node ' + Node1['label'] + ': X: ' + Node1['x'] + ': Y: ' + Node1['y'] + ': Z: ' + Node1['z'])
+            #print('Node ' + Node2['label'] + ': X: ' + Node2['x'] + ': Y: ' + Node2['y'] + ': Z: ' + Node2['z'])
+            line_no += 1
+            
 
 def extractHeadings(file):
     data = file.read()
@@ -170,15 +187,11 @@ f = open("2024 SB V4.5.r3d","r")
 
 with open("2024 SB V4.5.r3d","r") as file:
     data=file.read().split('\n')
-    ##print(GetUnits(data))
-    ##print(GetNodes(data))
-    #print(GetMembers(data))
     #print(data)
+    Units = GetUnits(data)
+    #print(Units)
     Nodes = GetNodes(data)
+    #print(Nodes)
     Members = GetMembers(data)
-    #Translate_Sides(Nodes, Members)
-    Node1 = GetNodePos(Nodes, Members[0][3])
-    Node2 = GetNodePos(Nodes, Members[0][4])
-    print('Member ' + str(Members[0][0]) + ': ')
-    print('Node ' + Node1['label'] + ': X: ' + Node1['x'] + ': Y: ' + Node1['y'] + ': Z: ' + Node1['z'])
-    print('Node ' + Node2['label'] + ': X: ' + Node2['x'] + ': Y: ' + Node2['y'] + ': Z: ' + Node2['z'])
+    #print(Members)
+    Translate_Sides(Nodes, Members)
