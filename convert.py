@@ -216,32 +216,66 @@ def RotPos(Node, Offset, XYT, XZT, ZYT):
     Rotated['Z4'] = Node['z']                           + Offset[1]*math.cos(ZYT) + Offset[1]*math.sin(XZT)
     return Rotated
 
+def GetFaces(face_arr, line_no):
+    face_arr.append('skip')
+    face_arr.append([8*line_no + 1, 8*line_no + 2, 8*line_no + 3])
+    face_arr.append([8*line_no + 2, 8*line_no + 3, 8*line_no + 4])
+    face_arr.append([8*line_no + 5, 8*line_no + 6, 8*line_no + 7])
+    face_arr.append([8*line_no + 6, 8*line_no + 7, 8*line_no + 8])
+    face_arr.append([8*line_no + 3, 8*line_no + 4, 8*line_no + 6])
+    face_arr.append([8*line_no + 5, 8*line_no + 6, 8*line_no + 8])
+    face_arr.append([8*line_no + 1, 8*line_no + 3, 8*line_no + 5])
+    face_arr.append([8*line_no + 3, 8*line_no + 5, 8*line_no + 7])
+    face_arr.append([8*line_no + 1, 8*line_no + 2, 8*line_no + 5])
+    face_arr.append([8*line_no + 2, 8*line_no + 5, 8*line_no + 6])
+    face_arr.append([8*line_no + 3, 8*line_no + 4, 8*line_no + 7])
+    face_arr.append([8*line_no + 4, 8*line_no + 7, 8*line_no + 8])
+    return face_arr
+
 def Translate_Points(Nodes, Members):
-        line_no = -1
-        while line_no < len(Members) - 1:
-            line_no += 1
-            NodePos1 = GetNodePos(Nodes, Members[line_no][3])
-            NodePos2 = GetNodePos(Nodes, Members[line_no][4])
-            MemberAxis = GetMemberAxis(NodePos1, NodePos2)
-            if 1 == 1:#MemberAxis == 'X-Axis' and int(NodePos1['z']) == 0:
-                Offset = GetOffsets(Members[line_no][2], Members[line_no][6])
-                XYTheta = GetXYTheta(NodePos1, NodePos2)
-                XZTheta = GetXZTheta(NodePos1, NodePos2)
-                ZYTheta = GetZYTheta(NodePos1, NodePos2)
-                RotNodePos1 = RotPos(NodePos1, Offset, XYTheta, XZTheta, ZYTheta)
-                RotNodePos2 = RotPos(NodePos2, Offset, -XYTheta, -XZTheta, -ZYTheta)
-                print('Member ' + Members[line_no][0] + ': ')
-                print('Axis: ' + MemberAxis)
-                print('NodePos1: ' + str(NodePos1))
-                #print('NodePos2: ' + str(NodePos2))
-                print('Offsets: ' + str(Offset))
-                print('XYTheta: ' + str(XYTheta * 180/math.pi))
-                print('XZTheta: ' + str(XZTheta * 180/math.pi))
-                print('ZYTheta: ' + str(ZYTheta * 180/math.pi))
-                print(str(RotNodePos1))
-                print(str(RotNodePos2))
-            #print('Node ' + Node1['label'] + ': X: ' + Node1['x'] + ': Y: ' + Node1['y'] + ': Z: ' + Node1['z'])
-            #print('Node ' + Node2['label'] + ': X: ' + Node2['x'] + ': Y: ' + Node2['y'] + ': Z: ' + Node2['z'])
+    vertex_arr = []
+    face_arr = []
+    line_no = -1
+    while line_no < len(Members) - 1:
+        line_no += 1
+        NodePos1 = GetNodePos(Nodes, Members[line_no][3])
+        NodePos2 = GetNodePos(Nodes, Members[line_no][4])
+        MemberAxis = GetMemberAxis(NodePos1, NodePos2)
+
+        Offset = GetOffsets(Members[line_no][2], Members[line_no][6])
+
+        XYTheta = GetXYTheta(NodePos1, NodePos2)
+        XZTheta = GetXZTheta(NodePos1, NodePos2)
+        ZYTheta = GetZYTheta(NodePos1, NodePos2)
+
+        RotNodePos1 = RotPos(NodePos1, Offset, XYTheta, XZTheta, ZYTheta)
+        RotNodePos2 = RotPos(NodePos2, Offset, XYTheta, XZTheta, ZYTheta)
+
+        vertex_arr.append([RotNodePos1['X1'], RotNodePos1['Y1'], RotNodePos1['Z1']])
+        vertex_arr.append([RotNodePos1['X2'], RotNodePos1['Y2'], RotNodePos1['Z2']])
+        vertex_arr.append([RotNodePos1['X3'], RotNodePos1['Y3'], RotNodePos1['Z3']])
+        vertex_arr.append([RotNodePos1['X4'], RotNodePos1['Y4'], RotNodePos1['Z4']])
+        vertex_arr.append([RotNodePos2['X1'], RotNodePos2['Y1'], RotNodePos2['Z1']])
+        vertex_arr.append([RotNodePos2['X2'], RotNodePos2['Y2'], RotNodePos2['Z2']])
+        vertex_arr.append([RotNodePos2['X3'], RotNodePos2['Y3'], RotNodePos2['Z3']])
+        vertex_arr.append([RotNodePos2['X4'], RotNodePos2['Y4'], RotNodePos2['Z4']])
+
+        face_arr = GetFaces(face_arr, line_no)
+
+        print('Member ' + Members[line_no][0] + ': ')
+        print('Axis: ' + MemberAxis)
+        print('NodePos1: ' + str(NodePos1))
+        print('NodePos2: ' + str(NodePos2))
+        print('Offsets: ' + str(Offset))
+        print('XYTheta: ' + str(XYTheta * 180/math.pi))
+        print('XZTheta: ' + str(XZTheta * 180/math.pi))
+        print('ZYTheta: ' + str(ZYTheta * 180/math.pi))
+        print(str(RotNodePos1))
+        print(str(RotNodePos2))
+
+        #print('Node ' + Node1['label'] + ': X: ' + Node1['x'] + ': Y: ' + Node1['y'] + ': Z: ' + Node1['z'])
+        #print('Node ' + Node2['label'] + ': X: ' + Node2['x'] + ': Y: ' + Node2['y'] + ': Z: ' + Node2['z'])
+    return vertex_arr, face_arr
             
             
 
@@ -266,4 +300,17 @@ with open("2024 SB V4.5.r3d","r") as file:
     #print(Nodes)
     Members = GetMembers(data)
     #print(Members)
-    Translate_Points(Nodes, Members)
+    Vertices = Translate_Points(Nodes, Members)
+    #print(Vertices[0])
+    with open("test.obj", 'w') as f:
+        f.write("# OBJ file\n")
+        f.write("o obj_0\n") 
+        for vertex in Vertices[0]:
+            f.write(f"v {vertex[0]} {vertex[1]} {vertex[2]}\n")
+        i=1
+        for face in Vertices[1]:
+            if isinstance(face, str) and face.startswith('skip'):
+                f.write('\n')
+                i=i+1
+            else:
+                f.write(f"f {face[0]} {face[1]} {face[2]}\n")
