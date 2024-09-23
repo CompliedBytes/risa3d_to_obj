@@ -180,23 +180,41 @@ def GetOffsets(Shape, MemberRot):
 
 def GetXYTheta(Node1, Node2):
     if ((Node2['x'] - Node1['x']) != 0):
-        Theta = math.atan((Node2['y'] - Node1['y'])/(Node2['x'] - Node1['x'])) * 180/math.pi
+        Theta = math.atan2((Node2['y'] - Node1['y']), (Node2['x'] - Node1['x'])) * 180/math.pi
     else:
         Theta = 0
     return Theta
 
 def GetXZTheta(Node1, Node2):
     if ((Node2['x'] - Node1['x']) != 0):
-        Theta = math.atan((Node2['z'] - Node1['z'])/(Node2['x'] - Node1['x'])) * 180/math.pi
+        Theta = math.atan2((Node2['z'] - Node1['z']), (Node2['x'] - Node1['x'])) * 180/math.pi
     else:
         Theta = 0
     return Theta
-def GetYZTheta(Node1, Node2):
+
+def GetZYTheta(Node1, Node2):
     if ((Node2['z'] - Node1['z']) != 0):
-        Theta = math.atan((Node2['y'] - Node1['y'])/(Node2['z'] - Node1['z'])) * 180/math.pi
+        Theta = math.atan2((Node2['y'] - Node1['y']), (Node2['z'] - Node1['z'])) * 180/math.pi
     else:
         Theta = 0
     return Theta
+
+def RotPos(Node, Offset, XYT, XZT, ZYT):
+    Rotated = {}
+    if XYT == 0:
+        Rotated['X1'] = Node['x'] - Offset[0]*math.sin(XYT)                           + Offset[1]*math.sin(XZT)
+        Rotated['X2'] = Node['x'] - Offset[0]*math.sin(XYT)                           - Offset[1]*math.sin(XZT)
+        Rotated['X3'] = Node['x'] + Offset[0]*math.sin(XYT)                           + Offset[1]*math.sin(XZT)
+        Rotated['X4'] = Node['x'] + Offset[0]*math.sin(XYT)                           - Offset[1]*math.sin(XZT)
+        Rotated['Y1'] = Node['y'] - Offset[0]*math.cos(XYT) - Offset[1]*math.sin(ZYT) 
+        Rotated['Y2'] = Node['y'] - Offset[0]*math.cos(XYT) + Offset[1]*math.sin(ZYT) 
+        Rotated['Y3'] = Node['y'] + Offset[0]*math.cos(XYT) - Offset[1]*math.sin(ZYT) 
+        Rotated['Y4'] = Node['y'] + Offset[0]*math.cos(XYT) + Offset[1]*math.sin(ZYT) 
+        Rotated['Z1'] = Node['z']                           - Offset[1]*math.cos(ZYT) - Offset[1]*math.cos(XZT)
+        Rotated['Z2'] = Node['z']                           + Offset[1]*math.cos(ZYT) + Offset[1]*math.cos(XZT)
+        Rotated['Z3'] = Node['z']                           - Offset[1]*math.cos(ZYT) - Offset[1]*math.cos(XZT)
+        Rotated['Z4'] = Node['z']                           + Offset[1]*math.cos(ZYT) + Offset[1]*math.cos(XZT)
+
 
 def Translate_Points(Nodes, Members):
         line_no = -1
@@ -209,14 +227,15 @@ def Translate_Points(Nodes, Members):
                 Offset = GetOffsets(Members[line_no][2], Members[line_no][6])
                 XYTheta = GetXYTheta(NodePos1, NodePos2)
                 XZTheta = GetXZTheta(NodePos1, NodePos2)
-                YZTheta = GetYZTheta(NodePos1, NodePos2)
+                ZYTheta = GetZYTheta(NodePos1, NodePos2)
+                #RotNodePos1 = 
                 print('Member ' + Members[line_no][0] + ': ')
                 print('Axis: ' + MemberAxis)
                 print('NodePos1: ' + str(NodePos1['z']))
                 print('Offsets: ' + str(Offset))
                 print('XYTheta: ' + str(XYTheta))
                 print('XZTheta: ' + str(XZTheta))
-                print('YZTheta: ' + str(YZTheta))
+                print('ZYTheta: ' + str(ZYTheta))
             #print('Node ' + Node1['label'] + ': X: ' + Node1['x'] + ': Y: ' + Node1['y'] + ': Z: ' + Node1['z'])
             #print('Node ' + Node2['label'] + ': X: ' + Node2['x'] + ': Y: ' + Node2['y'] + ': Z: ' + Node2['z'])
             
