@@ -222,14 +222,14 @@ def GetFaces(face_arr, line_no):
     face_arr.append([8*line_no + 2, 8*line_no + 3, 8*line_no + 4])
     face_arr.append([8*line_no + 5, 8*line_no + 6, 8*line_no + 7])
     face_arr.append([8*line_no + 6, 8*line_no + 7, 8*line_no + 8])
-    face_arr.append([8*line_no + 3, 8*line_no + 4, 8*line_no + 6])
-    face_arr.append([8*line_no + 5, 8*line_no + 6, 8*line_no + 8])
+    face_arr.append([8*line_no + 3, 8*line_no + 4, 8*line_no + 7])
+    face_arr.append([8*line_no + 4, 8*line_no + 7, 8*line_no + 8])
     face_arr.append([8*line_no + 1, 8*line_no + 3, 8*line_no + 5])
     face_arr.append([8*line_no + 3, 8*line_no + 5, 8*line_no + 7])
     face_arr.append([8*line_no + 1, 8*line_no + 2, 8*line_no + 5])
     face_arr.append([8*line_no + 2, 8*line_no + 5, 8*line_no + 6])
-    face_arr.append([8*line_no + 3, 8*line_no + 4, 8*line_no + 7])
-    face_arr.append([8*line_no + 4, 8*line_no + 7, 8*line_no + 8])
+    face_arr.append([8*line_no + 2, 8*line_no + 4, 8*line_no + 6])
+    face_arr.append([8*line_no + 4, 8*line_no + 6, 8*line_no + 8])
     return face_arr
 
 def Translate_Points(Nodes, Members):
