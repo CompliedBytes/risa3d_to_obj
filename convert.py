@@ -180,40 +180,53 @@ def GetOffsets(Shape, MemberRot):
 
 def GetXYTheta(Node1, Node2):
     if ((Node2['x'] - Node1['x']) != 0):
-        Theta = math.atan2((Node2['y'] - Node1['y']), (Node2['x'] - Node1['x'])) % math.pi
+        Theta = math.atan2((Node2['y'] - Node1['y']), (Node2['x'] - Node1['x']))
+        # if (Theta < 0):
+        #     Theta = Theta % math.pi# * -1
+        # else:
+        #     Theta = Theta % math.pi
     else:
         Theta = 0
     return Theta
 
 def GetXZTheta(Node1, Node2):
     if ((Node2['x'] - Node1['x']) != 0):
-        Theta = math.atan2((Node2['z'] - Node1['z']), (Node2['x'] - Node1['x'])) % math.pi
+        Theta = math.atan2((Node2['z'] - Node1['z']), (Node2['x'] - Node1['x']))
+        # if (Theta < 0):
+        #     Theta = Theta % math.pi# * -1
+        # else:
+        #     Theta = Theta % math.pi
     else:
         Theta = 0
     return Theta
 
 def GetZYTheta(Node1, Node2):
     if ((Node2['z'] - Node1['z']) != 0):
-        Theta = math.atan2((Node2['y'] - Node1['y']), (Node2['z'] - Node1['z'])) % math.pi
+        Theta = math.atan2((Node2['y'] - Node1['y']), (Node2['z'] - Node1['z']))
+        # if (Theta < 0):
+        #     Theta = Theta % math.pi# * -1
+        # else:
+        #     Theta = Theta % math.pi
     else:
         Theta = 0
     return Theta
 
 def RotPos(Node, Offset, XYT, XZT, ZYT):
     Rotated = {}
-    #                           Changes due to XY angle   Changes due to ZY angle   Changes due to XZ angle
-    Rotated['X1'] = Node['x'] - Offset[0]*math.sin(XYT)                           + Offset[1]*math.sin(XZT)
-    Rotated['X2'] = Node['x'] - Offset[0]*math.sin(XYT)                           - Offset[1]*math.sin(XZT)
-    Rotated['X3'] = Node['x'] + Offset[0]*math.sin(XYT)                           + Offset[1]*math.sin(XZT)
-    Rotated['X4'] = Node['x'] + Offset[0]*math.sin(XYT)                           - Offset[1]*math.sin(XZT)
-    Rotated['Y1'] = Node['y'] - Offset[0]*math.cos(XYT) - Offset[1]*math.sin(ZYT) 
-    Rotated['Y2'] = Node['y'] - Offset[0]*math.cos(XYT) + Offset[1]*math.sin(ZYT) 
-    Rotated['Y3'] = Node['y'] + Offset[0]*math.cos(XYT) - Offset[1]*math.sin(ZYT) 
-    Rotated['Y4'] = Node['y'] + Offset[0]*math.cos(XYT) + Offset[1]*math.sin(ZYT) 
-    Rotated['Z1'] = Node['z']                           - Offset[1]*math.cos(ZYT) - Offset[1]*math.sin(XZT)
-    Rotated['Z2'] = Node['z']                           + Offset[1]*math.cos(ZYT) + Offset[1]*math.sin(XZT)
-    Rotated['Z3'] = Node['z']                           - Offset[1]*math.cos(ZYT) - Offset[1]*math.sin(XZT)
-    Rotated['Z4'] = Node['z']                           + Offset[1]*math.cos(ZYT) + Offset[1]*math.sin(XZT)
+    #                           Changes due to XY angle                Changes due to ZY angle                Changes due to XZ angle
+    Rotated['X1'] = Node['x'] - Offset[0]*math.sin(XYT)                                                     + Offset[1]*math.sin(XZT)
+    Rotated['X2'] = Node['x'] - Offset[0]*math.sin(XYT)                                                     - Offset[1]*math.sin(XZT)
+    Rotated['X3'] = Node['x'] + Offset[0]*math.sin(XYT)                                                     + Offset[1]*math.sin(XZT)
+    Rotated['X4'] = Node['x'] + Offset[0]*math.sin(XYT)                                                     - Offset[1]*math.sin(XZT)
+    Rotated['Y1'] = Node['y'] + Offset[0]*math.cos(XYT) - Offset[1]*math.sin(ZYT) + Offset[0]*math.cos(ZYT)
+    Rotated['Y2'] = Node['y'] + Offset[0]*math.cos(XYT) + Offset[1]*math.sin(ZYT) + Offset[0]*math.cos(ZYT)
+    Rotated['Y3'] = Node['y'] - Offset[0]*math.cos(XYT) - Offset[1]*math.sin(ZYT) + Offset[0]*math.cos(ZYT)
+    Rotated['Y4'] = Node['y'] - Offset[0]*math.cos(XYT) + Offset[1]*math.sin(ZYT) + Offset[0]*math.cos(ZYT)
+    Rotated['Z1'] = Node['z']                           - Offset[0]*math.sin(ZYT) - Offset[1]*math.cos(ZYT) - Offset[1]*math.cos(XZT)
+    Rotated['Z2'] = Node['z']                           + Offset[0]*math.sin(ZYT) + Offset[1]*math.cos(ZYT) + Offset[1]*math.cos(XZT)
+    Rotated['Z3'] = Node['z']                           - Offset[0]*math.sin(ZYT) - Offset[1]*math.cos(ZYT) - Offset[1]*math.cos(XZT)
+    Rotated['Z4'] = Node['z']                           + Offset[0]*math.sin(ZYT) + Offset[1]*math.cos(ZYT) + Offset[1]*math.cos(XZT)
+    
     return Rotated
 
 def GetFaces(face_arr, line_no):
@@ -259,9 +272,14 @@ def Translate_Points(Nodes, Members):
         vertex_arr.append([RotNodePos2['X2'], RotNodePos2['Y2'], RotNodePos2['Z2']])
         vertex_arr.append([RotNodePos2['X3'], RotNodePos2['Y3'], RotNodePos2['Z3']])
         vertex_arr.append([RotNodePos2['X4'], RotNodePos2['Y4'], RotNodePos2['Z4']])
-
+        #if (Members[line_no][0] == 'M89'):
         face_arr = GetFaces(face_arr, line_no)
-
+        # print('Sin(XYT): ' + str(Offset[1]*math.sin(XYTheta)))
+        # print('Cos(XYT): ' + str(Offset[1]*math.cos(XYTheta)))
+        # print('Sin(ZYT): ' + str(Offset[1]*math.sin(ZYTheta)))
+        # print('Cos(ZYT): ' + str(Offset[1]*math.cos(ZYTheta)))
+        # print('Sin(XZT): ' + str(Offset[1]*math.sin(XZTheta)))
+        # print('Cos(XZT): ' + str(Offset[1]*math.cos(XZTheta)))
         print('Member ' + Members[line_no][0] + ': ')
         print('Axis: ' + MemberAxis)
         print('NodePos1: ' + str(NodePos1))
