@@ -253,9 +253,34 @@ def extractHeadings(file):
     headings = [match[1:-1] for match in matches]
     return headings
 
-f = open("2024 SB V4.5.r3d","r")
 
-#parseData(f)
+headings = ['UNITS', 'NODES','.MEMBERS_MAIN_DATA']
+END = 'END'
+
+#with open("2024 SB V4.5.r3d","r") as file:
+#    for line in file:
+#        for heading in headings:
+#            if heading in line and "END" not in line:
+#                line = line.strip()
+#                #print(f"heading, {heading}, found in line \"{line}\"")
+#                len = int(line.split('<')[-1].strip('>'))
+#                data = []
+#                match heading:
+#                    case 'UNITS':
+#                        for i in range(len):
+#                            data.append(file.readline())
+#                    case 'NODES':
+#                        for i in range(len):
+#                            data.append(file.readline())
+#                        #print(data)
+#                        nodes = GetNodes(data)
+#                        print(nodes)
+#                    case '.MEMBERS_MAIN_DATA':
+#                        for i in range(len):
+#                            data.append(file.readline())
+#                        GetNodes(data)
+                        
+
 
 with open("2024 SB V4.5.r3d","r") as file:
     data=file.read().split('\n')
