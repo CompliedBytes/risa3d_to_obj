@@ -1,6 +1,7 @@
 import math
 import re
 from dataclasses import dataclass
+#import numpy as np
 
 @dataclass
 class Node:
@@ -14,6 +15,7 @@ class Member:
     label: str
     design_list: str
     shape_label: str
+    # These are the node numbers in sequential order and not the node label for some reason in the RISA format
     inode: int
     jnode: int
     knode: int
@@ -49,27 +51,33 @@ def GetUnits(data):
     
     return units_text
 
+
+# This function is used to extract the float from the scientific notation
+# This probably won't be needed since you can directly convert the string to float
 def extract_float(numStr):
     sci = numStr.split('e+')
     num = float(sci[0])*10**(int(sci[1]))
     return num
 
+# This function is used to get the nodes from the risa file
 def get_nodes(data):
     # Node Format: Name/ID  X coord, Y coord, Z coord
-    node_dict = {}
+    nodes = []
     for line in data:
         line = line[1:-2].strip().split('"')
         line[0] = line[0].strip()
         label = line[0]
-        x = extract_float(line[1].split()[0])
-        y = extract_float(line[1].split()[1])
-        z = extract_float(line[1].split()[2])
+        line = line[1].split()
+        x = float(line[0])
+        y = float(line[1])
+        z = float(line[2])
         node = Node(label, x, y, z)
-        node_dict[label] = node
-    return node_dict
+        nodes.append(node)
+    return nodes
 
+# This function is used to get the memebers from the risa file
 def get_members(data):
-    member_dict = {}
+    members = []
     for line in data:
         line = line[1:-2].strip().split('"')
         for i,s in enumerate(line):
@@ -90,14 +98,9 @@ def get_members(data):
         material = temp[7]
 
         member = Member(label, design_list, shape_label, inode, jnode, knode, rotation, offset, material)
-        member_dict[label] = member
+        members.append(member)
+    return members
 
-    return member_dict
-
-def GetNodePos(Nodes, ID):
-    #print(Nodes)
-    Pos = {'label': Nodes[int(ID)][0],'x': float(Nodes[int(ID)][1]), 'y': float(Nodes[int(ID)][2]), 'z': float(Nodes[int(ID)][3])}
-    return Pos
 
 def GetMemberAxis(Node1, Node2):
     if Node1['y'] == Node2['y'] and Node1['z'] == Node2['z']:
@@ -206,10 +209,10 @@ def extractHeadings(file):
 HEADINGS = ['UNITS', 'NODES','.MEMBERS_MAIN_DATA']
 END = 'END'
 
-#nodes = {}
-
 
 def main():
+    nodes = []
+    members = []
     with open("2024 SB V4.5.r3d","r") as file:
         for line in file:
             for heading in HEADINGS:
@@ -222,19 +225,14 @@ def main():
                         case 'UNITS':
                             for i in range(len):
                                 data.append(file.readline().strip())
-                            #GetUnits(data)
-
                         case 'NODES':
                             for i in range(len):
                                 data.append(file.readline().strip())
                             nodes = get_nodes(data)
-                            #print(nodes)
-
                         case '.MEMBERS_MAIN_DATA':
                             for i in range(len):
                                 data.append(file.readline())
-                            get_members(data)
-
+                            members = get_members(data)
 
 
 if __name__=="__main__":
