@@ -9,8 +9,17 @@ class Node:
     y: float
     z: float
 
-
-
+@dataclass
+class Member:
+    label: str
+    design_list: str
+    shape_label: str
+    inode: int
+    jnode: int
+    knode: int
+    rotation: float
+    offset: int
+    material: int
 
 def GetUnits(data):
     # Unit Format: length_units  dim_units
@@ -40,41 +49,48 @@ def GetUnits(data):
     
     return units_text
 
-def extractFloat(numStr):
+def extract_float(numStr):
     sci = numStr.split('e+')
-    print(sci)
     num = float(sci[0])*10**(int(sci[1]))
     return num
 
-def GetNodes(data):
+def get_nodes(data):
     # Node Format: Name/ID  X coord, Y coord, Z coord
     node_dict = {}
     for line in data:
         line = line[1:-2].strip().split('"')
-        #line.pop(0)
-        
         line[0] = line[0].strip()
-        print(line)
         label = line[0]
-        print(line[1].split())
-
-        node_dict[line[0]] = line[1].split()
+        x = extract_float(line[1].split()[0])
+        y = extract_float(line[1].split()[1])
+        z = extract_float(line[1].split()[2])
+        node = Node(label, x, y, z)
+        node_dict[label] = node
     return node_dict
 
-def GetMembers(data):
+def get_members(data):
     member_dict = {}
     for line in data:
         line = line[1:-2].strip().split('"')
-        #print(line)
         for i,s in enumerate(line):
             line[i] = s.strip('"')
             line[i] = s.strip()
         line.pop(1)
         line.pop(2)
-        #print(line)
-        temp = line[1:]
-        #print(temp)
-        member_dict[line[0]] = line[1] 
+        temp = line[3].split()
+
+        label = line[0]
+        design_list = line[1]
+        shape_label = line[2]
+        inode = temp[0]
+        jnode = temp[1]
+        knode = temp[2]
+        rotation = temp[3]
+        offset = temp[4]
+        material = temp[7]
+
+        member = Member(label, design_list, shape_label, inode, jnode, knode, rotation, offset, material)
+        member_dict[label] = member
 
     return member_dict
 
@@ -211,13 +227,13 @@ def main():
                         case 'NODES':
                             for i in range(len):
                                 data.append(file.readline().strip())
-                            nodes = GetNodes(data)
+                            nodes = get_nodes(data)
                             #print(nodes)
 
                         case '.MEMBERS_MAIN_DATA':
                             for i in range(len):
                                 data.append(file.readline())
-                            GetMembers(data)
+                            get_members(data)
 
 
 
