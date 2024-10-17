@@ -1,8 +1,16 @@
-import os
 import math
-import tkinter
-from tkinter import filedialog
 import re
+from dataclasses import dataclass
+
+@dataclass
+class Node:
+    label: str
+    x: float
+    y: float
+    z: float
+
+
+
 
 def GetUnits(data):
     # Unit Format: length_units  dim_units
@@ -32,13 +40,24 @@ def GetUnits(data):
     
     return units_text
 
+def extractFloat(numStr):
+    sci = numStr.split('e+')
+    print(sci)
+    num = float(sci[0])*10**(int(sci[1]))
+    return num
+
 def GetNodes(data):
     # Node Format: Name/ID  X coord, Y coord, Z coord
     node_dict = {}
     for line in data:
         line = line[1:-2].strip().split('"')
         #line.pop(0)
+        
         line[0] = line[0].strip()
+        print(line)
+        label = line[0]
+        print(line[1].split())
+
         node_dict[line[0]] = line[1].split()
     return node_dict
 
@@ -54,7 +73,7 @@ def GetMembers(data):
         line.pop(2)
         #print(line)
         temp = line[1:]
-        print(temp)
+        #print(temp)
         member_dict[line[0]] = line[1] 
 
     return member_dict
@@ -173,27 +192,34 @@ END = 'END'
 
 #nodes = {}
 
-with open("2024 SB V4.5.r3d","r") as file:
-    for line in file:
-        for heading in HEADINGS:
-            if heading in line and "END" not in line:
-                line = line.strip()
-                #print(f"heading, {heading}, found in line \"{line}\"")
-                len = int(line.split('<')[-1].strip('>'))
-                data = []
-                match heading:
-                    case 'UNITS':
-                        for i in range(len):
-                            data.append(file.readline().strip())
-                        #GetUnits(data)
 
-                    case 'NODES':
-                        for i in range(len):
-                            data.append(file.readline().strip())
-                        nodes = GetNodes(data)
-                        #print(nodes)
+def main():
+    with open("2024 SB V4.5.r3d","r") as file:
+        for line in file:
+            for heading in HEADINGS:
+                if heading in line and "END" not in line:
+                    line = line.strip()
+                    #print(f"heading, {heading}, found in line \"{line}\"")
+                    len = int(line.split('<')[-1].strip('>'))
+                    data = []
+                    match heading:
+                        case 'UNITS':
+                            for i in range(len):
+                                data.append(file.readline().strip())
+                            #GetUnits(data)
 
-                    case '.MEMBERS_MAIN_DATA':
-                        for i in range(len):
-                            data.append(file.readline())
-                        GetMembers(data)
+                        case 'NODES':
+                            for i in range(len):
+                                data.append(file.readline().strip())
+                            nodes = GetNodes(data)
+                            #print(nodes)
+
+                        case '.MEMBERS_MAIN_DATA':
+                            for i in range(len):
+                                data.append(file.readline())
+                            GetMembers(data)
+
+
+
+if __name__=="__main__":
+    main()
