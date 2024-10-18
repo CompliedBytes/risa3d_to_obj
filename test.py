@@ -22,7 +22,7 @@ class Member:
     rotation: float
     offset: int
     material: int
-    heigt: float = 0
+    height: float = 0
     width: float = 0
     thickness: float = 0
     radius: float = 0
