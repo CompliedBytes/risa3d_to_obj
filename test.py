@@ -1,7 +1,7 @@
 import math
 import re
 from dataclasses import dataclass
-#import numpy as np
+import numpy as np
 
 @dataclass
 class Node:
@@ -37,6 +37,10 @@ class Member:
         else:
             self.heigt = float(dimensions[0])
             self.width = float(dimensions[1])
+        
+
+        
+
             
 
 def GetUnits(data):
@@ -106,12 +110,12 @@ def get_members(data):
         label = line[0]
         design_list = line[1]
         shape_label = line[2]
-        inode = temp[0]
-        jnode = temp[1]
-        knode = temp[2]
-        rotation = temp[3]
-        offset = temp[4]
-        material = temp[7]
+        inode = int(temp[0])
+        jnode = int(temp[1])
+        knode = int(temp[2])
+        rotation = float(temp[3])
+        offset = int(temp[4])
+        material = int(temp[7])
 
         member = Member(label, design_list, shape_label, inode, jnode, knode, rotation, offset, material)
         members.append(member)
@@ -119,6 +123,10 @@ def get_members(data):
 
 def generate_face_verticies(member, nodes):
     pass
+
+
+
+
 
 #def GetMemberAxis(Node1, Node2):
 #    if Node1['y'] == Node2['y'] and Node1['z'] == Node2['z']:
@@ -249,11 +257,58 @@ def main():
                             for i in range(len):
                                 data.append(file.readline())
                             members = get_members(data)
-
+    idx=0
+    
     for node in nodes:
         print(node)
-    for member in members:
-        print(member)
+    for i in range(members.__len__()):
+        member = members[i]
+        if member.label == "M90":
+            idx = i
+    print(idx)
+
+
+    print(members[idx].label,nodes[members[idx].inode-1],nodes[members[idx].jnode-1])
+
+    i = nodes[members[idx].inode-1]
+    j = nodes[members[idx].jnode-1]
+    mem = np.array([[j.x - i.x],[j.y - i.y],[j.z - i.z]])
+    
+    
+    mem_x, mem_y, mem_z = mem
+    mem_mag = np.linalg.norm(mem)
+
+    xy_mag = np.linalg.norm(mem_x,mem_y)
+
+
+    print(mem_x,mem_y,mem_z)
+    ##unit_vec = mem/mem_mag
+    ##print(unit_vec)
+    #
+    #thetax = np.acos(mem[0,0]/np.linalg.norm(mem))
+    #ivec = np.array([[1],[0],[0]])
+    #thetay = np.acos(mem[1,0]/np.linalg.norm(mem))
+    #thetaz = np.acos(mem[2,0]/np.linalg.norm(mem))
+    #print(np.degrees(thetax))
+    #print(np.degrees(thetay))
+    #print(np.degrees(thetaz))
+    #
+    #
+    #print(mem)
+    #if mem[0,0] != 0:
+    #    xy = np.arctan(mem[1,0]/mem[0,0])
+    #else:
+    #    xy=0
+    #if mem[2,0] != 0:
+    #    zy = np.arctan(mem[1,0]/mem[2,0])
+    #else:
+    #    zy=0
+    #if mem[2,0] != 0:
+    #    zx = np.arctan(mem[0,0]/mem[2,0])
+    #else:
+    #    zx=0
+#
+    #print(np.degrees(xy),np.degrees(zy),np.degrees(zx))
 
 
 if __name__=="__main__":
