@@ -26,6 +26,9 @@ class Member:
     width: float = 0
     thickness: float = 0
     radius: float = 0
+    theta_yz: float = 0
+    theta_xz: float = 0
+    theta_xy: float = 0
 
     def __post_init__(self):
         dimensions = self.shape_label.split('X')
@@ -37,11 +40,6 @@ class Member:
         else:
             self.heigt = float(dimensions[0])
             self.width = float(dimensions[1])
-        
-
-        
-
-            
 
 def GetUnits(data):
     # Unit Format: length_units  dim_units
@@ -121,118 +119,41 @@ def get_members(data):
         members.append(member)
     return members
 
-def generate_face_verticies(member, nodes):
-    pass
+# This function takes in a vector and a plane normal
+# Then it finds the angle the vector makes with that plane and returns it in degrees
+def get_plane_angle(vector, normal):
+    flat = vector.flatten()
+    dot = np.dot(flat,normal)
 
+    vect_mag = np.linalg.norm(flat)
+    norm_mag = np.linalg.norm(normal)
+    cos_theta = dot / (vect_mag*norm_mag)
+    theta_rad = np.arccos(cos_theta)
+    theta_plane = 90 - np.degrees(theta_rad)
 
+    return theta_plane
 
+# This function takes in a member and the set of nodes
+# Then it will compute the angles made with each axis (yz,xz,xy)
+# It will update the member object with the new angles found
+def compute_and_set_angles(member, nodes):
+    
+    print(member.label,nodes[member.inode-1],nodes[member.jnode-1])
 
+    i = nodes[member.inode-1]
+    j = nodes[member.jnode-1]
+    member_vect = np.array([[j.x - i.x],[j.y - i.y],[j.z - i.z]])
+    
+    yz_normal = np.array([1,0,0])
+    xz_normal = np.array([0,1,0])
+    xy_normal = np.array([0,0,1])
 
-#def GetMemberAxis(Node1, Node2):
-#    if Node1['y'] == Node2['y'] and Node1['z'] == Node2['z']:
-#        return 'X-Axis'
-#    elif Node1['x'] == Node2['x'] and Node1['z'] == Node2['z']:
-#        return 'Y-Axis'
-#    elif Node1['x'] == Node2['x'] and Node1['y'] == Node2['y'] :
-#        return 'Z-Axis'
-#    else:
-#        return 'No Axis'
-#
-#def GetOffsets(Shape, MemberRot):
-#    # Splits into Height, Width, and Wall Thickness (if applicable)
-#    MatDim = Shape.split('X')
-#    Temp = MatDim[0]
-#    Temp = Temp.replace('RE', '')
-#    MatDim[0] = Temp
-#    if float(MemberRot) == 90.0 or float(MemberRot) == 270.0:
-#        temp_height = MatDim[0]
-#        temp_width = MatDim[1]
-#        MatDim[0] = float(temp_width)/2
-#        MatDim[1] = float(temp_height)/2
-#    else:
-#        MatDim[0] = float(MatDim[0])/2
-#        MatDim[1] = float(MatDim[1])/2
-#    if len(MatDim) == 3:
-#        MatDim[2] = float(MatDim[2])
-#    return MatDim
-#
-#def GetXYTheta(Node1, Node2):
-#    if ((Node2['x'] - Node1['x']) != 0):
-#        Theta = math.atan2((Node2['y'] - Node1['y']), (Node2['x'] - Node1['x'])) % math.pi
-#    else:
-#        Theta = 0
-#    return Theta
-#
-#def GetXZTheta(Node1, Node2):
-#    if ((Node2['x'] - Node1['x']) != 0):
-#        Theta = math.atan2((Node2['z'] - Node1['z']), (Node2['x'] - Node1['x'])) % math.pi
-#    else:
-#        Theta = 0
-#    return Theta
-#
-#def GetZYTheta(Node1, Node2):
-#    if ((Node2['z'] - Node1['z']) != 0):
-#        Theta = math.atan2((Node2['y'] - Node1['y']), (Node2['z'] - Node1['z'])) % math.pi
-#    else:
-#        Theta = 0
-#    return Theta
-#
-#def RotPos(Node, Offset, XYT, XZT, ZYT):
-#    Rotated = {}
-#    #                           Changes due to XY angle   Changes due to ZY angle   Changes due to XZ angle
-#    Rotated['X1'] = Node['x'] - Offset[0]*math.sin(XYT)                           + Offset[1]*math.sin(XZT)
-#    Rotated['X2'] = Node['x'] - Offset[0]*math.sin(XYT)                           - Offset[1]*math.sin(XZT)
-#    Rotated['X3'] = Node['x'] + Offset[0]*math.sin(XYT)                           + Offset[1]*math.sin(XZT)
-#    Rotated['X4'] = Node['x'] + Offset[0]*math.sin(XYT)                           - Offset[1]*math.sin(XZT)
-#    Rotated['Y1'] = Node['y'] - Offset[0]*math.cos(XYT) - Offset[1]*math.sin(ZYT) 
-#    Rotated['Y2'] = Node['y'] - Offset[0]*math.cos(XYT) + Offset[1]*math.sin(ZYT) 
-#    Rotated['Y3'] = Node['y'] + Offset[0]*math.cos(XYT) - Offset[1]*math.sin(ZYT) 
-#    Rotated['Y4'] = Node['y'] + Offset[0]*math.cos(XYT) + Offset[1]*math.sin(ZYT) 
-#    Rotated['Z1'] = Node['z']                           - Offset[1]*math.cos(ZYT) - Offset[1]*math.sin(XZT)
-#    Rotated['Z2'] = Node['z']                           + Offset[1]*math.cos(ZYT) + Offset[1]*math.sin(XZT)
-#    Rotated['Z3'] = Node['z']                           - Offset[1]*math.cos(ZYT) - Offset[1]*math.sin(XZT)
-#    Rotated['Z4'] = Node['z']                           + Offset[1]*math.cos(ZYT) + Offset[1]*math.sin(XZT)
-#    return Rotated
-#
-#def Translate_Points(Nodes, Members):
-#        line_no = -1
-#        while line_no < len(Members) - 1:
-#            line_no += 1
-#            NodePos1 = GetNodePos(Nodes, Members[line_no][3])
-#            NodePos2 = GetNodePos(Nodes, Members[line_no][4])
-#            MemberAxis = GetMemberAxis(NodePos1, NodePos2)
-#            if 1 == 1:#MemberAxis == 'X-Axis' and int(NodePos1['z']) == 0:
-#                Offset = GetOffsets(Members[line_no][2], Members[line_no][6])
-#                XYTheta = GetXYTheta(NodePos1, NodePos2)
-#                XZTheta = GetXZTheta(NodePos1, NodePos2)
-#                ZYTheta = GetZYTheta(NodePos1, NodePos2)
-#                RotNodePos1 = RotPos(NodePos1, Offset, XYTheta, XZTheta, ZYTheta)
-#                RotNodePos2 = RotPos(NodePos2, Offset, -XYTheta, -XZTheta, -ZYTheta)
-#                print('Member ' + Members[line_no][0] + ': ')
-#                print('Axis: ' + MemberAxis)
-#                print('NodePos1: ' + str(NodePos1))
-#                #print('NodePos2: ' + str(NodePos2))
-#                print('Offsets: ' + str(Offset))
-#                print('XYTheta: ' + str(XYTheta * 180/math.pi))
-#                print('XZTheta: ' + str(XZTheta * 180/math.pi))
-#                print('ZYTheta: ' + str(ZYTheta * 180/math.pi))
-#                print(str(RotNodePos1))
-#                print(str(RotNodePos2))
-#            #print('Node ' + Node1['label'] + ': X: ' + Node1['x'] + ': Y: ' + Node1['y'] + ': Z: ' + Node1['z'])
-#            #print('Node ' + Node2['label'] + ': X: ' + Node2['x'] + ': Y: ' + Node2['y'] + ': Z: ' + Node2['z'])
-#                
-#def extractHeadings(file):
-#    data = file.read()
-#    pattern = r'\[(?!\.{0,2}END)[^\]]*\]'
-#    # this regex matches all strings inside brackets that dont have "END" at the begining
-#    matches = re.findall(pattern,data)
-#    headings = [match[1:-1] for match in matches]
-#    return headings
-
+    member.theta_yz = get_plane_angle(member_vect, yz_normal).item()
+    member.theta_xz = get_plane_angle(member_vect, xz_normal).item()
+    member.theta_xy = get_plane_angle(member_vect, xy_normal).item()
 
 HEADINGS = ['UNITS', 'NODES','.MEMBERS_MAIN_DATA']
 END = 'END'
-
 
 def main():
     nodes = []
@@ -260,55 +181,11 @@ def main():
     idx=0
     
     for node in nodes:
-        print(node)
-    for i in range(members.__len__()):
-        member = members[i]
-        if member.label == "M90":
-            idx = i
-    print(idx)
-
-
-    print(members[idx].label,nodes[members[idx].inode-1],nodes[members[idx].jnode-1])
-
-    i = nodes[members[idx].inode-1]
-    j = nodes[members[idx].jnode-1]
-    mem = np.array([[j.x - i.x],[j.y - i.y],[j.z - i.z]])
-    
-    
-    mem_x, mem_y, mem_z = mem
-    mem_mag = np.linalg.norm(mem)
-
-    xy_mag = np.linalg.norm(mem_x,mem_y)
-
-
-    print(mem_x,mem_y,mem_z)
-    ##unit_vec = mem/mem_mag
-    ##print(unit_vec)
-    #
-    #thetax = np.acos(mem[0,0]/np.linalg.norm(mem))
-    #ivec = np.array([[1],[0],[0]])
-    #thetay = np.acos(mem[1,0]/np.linalg.norm(mem))
-    #thetaz = np.acos(mem[2,0]/np.linalg.norm(mem))
-    #print(np.degrees(thetax))
-    #print(np.degrees(thetay))
-    #print(np.degrees(thetaz))
-    #
-    #
-    #print(mem)
-    #if mem[0,0] != 0:
-    #    xy = np.arctan(mem[1,0]/mem[0,0])
-    #else:
-    #    xy=0
-    #if mem[2,0] != 0:
-    #    zy = np.arctan(mem[1,0]/mem[2,0])
-    #else:
-    #    zy=0
-    #if mem[2,0] != 0:
-    #    zx = np.arctan(mem[0,0]/mem[2,0])
-    #else:
-    #    zx=0
-#
-    #print(np.degrees(xy),np.degrees(zy),np.degrees(zx))
+        #print(node)
+        pass
+    for member in members:
+        compute_and_set_angles(member,nodes)
+        print(member)
 
 
 if __name__=="__main__":
