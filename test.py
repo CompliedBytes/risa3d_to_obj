@@ -34,9 +34,7 @@ class Member:
         dimensions = self.shape_label.split('X')
         if len(dimensions) == 2:
             cleaned_value = ''.join(char for char in dimensions[0] if char.isdigit() or char == '.' or char == '-')
-
             self.radius = float(cleaned_value)
-
         else:
             self.heigt = float(dimensions[0])
             self.width = float(dimensions[1])
@@ -140,6 +138,7 @@ def compute_and_set_angles(member, nodes):
     
     print(member.label,nodes[member.inode-1],nodes[member.jnode-1])
 
+    # Creates a vector from the i and j nodes of the member
     i = nodes[member.inode-1]
     j = nodes[member.jnode-1]
     member_vect = np.array([[j.x - i.x],[j.y - i.y],[j.z - i.z]])
@@ -148,6 +147,7 @@ def compute_and_set_angles(member, nodes):
     xz_normal = np.array([0,1,0])
     xy_normal = np.array([0,0,1])
 
+    #The .item() here is used to convert from numpy flot to python flot
     member.theta_yz = get_plane_angle(member_vect, yz_normal).item()
     member.theta_xz = get_plane_angle(member_vect, xz_normal).item()
     member.theta_xy = get_plane_angle(member_vect, xy_normal).item()
