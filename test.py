@@ -36,7 +36,7 @@ class Member:
             cleaned_value = ''.join(char for char in dimensions[0] if char.isdigit() or char == '.' or char == '-')
             self.radius = float(cleaned_value)
         else:
-            self.heigt = float(dimensions[0])
+            self.height = float(dimensions[0])
             self.width = float(dimensions[1])
 
 def GetUnits(data):
@@ -136,7 +136,7 @@ def get_plane_angle(vector, normal):
 # It will update the member object with the new angles found
 def compute_and_set_angles(member, nodes):
     
-    print(member.label,nodes[member.inode-1],nodes[member.jnode-1])
+    #print(member.label,nodes[member.inode-1],nodes[member.jnode-1])
 
     # Creates a vector from the i and j nodes of the member
     i = nodes[member.inode-1]
@@ -178,11 +178,7 @@ def main():
                             for i in range(len):
                                 data.append(file.readline())
                             members = get_members(data)
-    idx=0
-    
-    for node in nodes:
-        #print(node)
-        pass
+
     for member in members:
         compute_and_set_angles(member,nodes)
         print(member)
