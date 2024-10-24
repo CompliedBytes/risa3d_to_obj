@@ -178,24 +178,15 @@ def compute_and_set_angles(member, nodes):
     member.theta_xz = get_plane_angle(member_vect, xz_normal).item()
     member.theta_xy = get_plane_angle(member_vect, xy_normal).item()
 
+def get_memberID_by_name(nodeLabel, memberList):
+    for i in range(memberList.__len__()):
+        member = memberList[i]
+        if member.label == nodeLabel:
+            idx = i
+    return idx
+
 def generate_face_verticies(member, nodes):
-    if member.radius != 0:
-        # i face
-        print(nodes[member.inode-1],nodes[member.jnode-1])
-        [ix,iy,iz] = member.get_i_coordinates(nodes)
-        print(f"inodes: x:{ix} y:{iy} z:{iz}")
-
-        # Generate first triangle
-        print(member.theta_yz, member.theta_xz,member.theta_xy)
-
-        # Generare second triangle
-
-
-        # j face
-        [jx,jy,jz] = member.get_j_coordinates(nodes)
-        print(f"jnodes: x:{jx} y:{jy} z:{jz}")
-        # remaining faces
-
+    pass
 
 HEADINGS = ['UNITS', 'NODES','.MEMBERS_MAIN_DATA']
 END = 'END'
@@ -226,10 +217,8 @@ def main():
 
     for member in members:
         compute_and_set_angles(member,nodes)
-        #print(member)
     
-    idx=0
-    generate_face_verticies(members[idx],nodes)
+    idx=get_memberID_by_name("M90",members)
 
 
 if __name__=="__main__":
