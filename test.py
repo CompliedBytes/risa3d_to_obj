@@ -49,8 +49,9 @@ class Member:
             cleaned_value = ''.join(char for char in dimensions[0] if char.isdigit() or char == '.' or char == '-')
             self.radius = float(cleaned_value)
         else:
-            self.height = float(dimensions[0])
-            self.width = float(dimensions[1])
+            self.width = float(dimensions[0])
+            self.height = float(dimensions[1])
+            self.thickness = float(dimensions[2])
     
     def get_i_coordinates(self,nodes):
         x = nodes[self.inode-1].x
