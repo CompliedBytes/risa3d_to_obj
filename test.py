@@ -4,6 +4,19 @@ from dataclasses import dataclass
 import numpy as np
 
 @dataclass
+class Point:
+    x: float
+    y: float
+    z: float
+
+@dataclass
+class Face:
+    v1: Point
+    v2: Point
+    v3: Point
+
+
+@dataclass
 class Node:
     label: str
     x: float
@@ -38,6 +51,20 @@ class Member:
         else:
             self.height = float(dimensions[0])
             self.width = float(dimensions[1])
+    
+    def get_i_coordinates(self,nodes):
+        x = nodes[self.inode-1].x
+        y = nodes[self.inode-1].y
+        z = nodes[self.inode-1].z
+        #print(f"x:{x} y:{y} z:{z}")
+        return [x,y,z]
+    
+    def get_j_coordinates(self,nodes):
+        x = nodes[self.jnode-1].x
+        y = nodes[self.jnode-1].y
+        z = nodes[self.jnode-1].z
+        #print(f"x:{x} y:{y} z:{z}")
+        return [x,y,z]
 
 def GetUnits(data):
     # Unit Format: length_units  dim_units
@@ -66,7 +93,6 @@ def GetUnits(data):
             units_text['dim_units'] = 'mm'
     
     return units_text
-
 
 # This function is used to extract the float from the scientific notation
 # This probably won't be needed since you can directly convert the string to float
@@ -152,6 +178,25 @@ def compute_and_set_angles(member, nodes):
     member.theta_xz = get_plane_angle(member_vect, xz_normal).item()
     member.theta_xy = get_plane_angle(member_vect, xy_normal).item()
 
+def generate_face_verticies(member, nodes):
+    if member.radius != 0:
+        # i face
+        print(nodes[member.inode-1],nodes[member.jnode-1])
+        [ix,iy,iz] = member.get_i_coordinates(nodes)
+        print(f"inodes: x:{ix} y:{iy} z:{iz}")
+
+        # Generate first triangle
+        print(member.theta_yz, member.theta_xz,member.theta_xy)
+
+        # Generare second triangle
+
+
+        # j face
+        [jx,jy,jz] = member.get_j_coordinates(nodes)
+        print(f"jnodes: x:{jx} y:{jy} z:{jz}")
+        # remaining faces
+
+
 HEADINGS = ['UNITS', 'NODES','.MEMBERS_MAIN_DATA']
 END = 'END'
 
@@ -181,7 +226,10 @@ def main():
 
     for member in members:
         compute_and_set_angles(member,nodes)
-        print(member)
+        #print(member)
+    
+    idx=0
+    generate_face_verticies(members[idx],nodes)
 
 
 if __name__=="__main__":
