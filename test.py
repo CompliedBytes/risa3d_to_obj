@@ -49,8 +49,9 @@ class Member:
             cleaned_value = ''.join(char for char in dimensions[0] if char.isdigit() or char == '.' or char == '-')
             self.radius = float(cleaned_value)
         else:
-            self.height = float(dimensions[0])
-            self.width = float(dimensions[1])
+            self.width = float(dimensions[0])
+            self.height = float(dimensions[1])
+            self.thickness = float(dimensions[2])
     
     def get_i_coordinates(self,nodes):
         x = nodes[self.inode-1].x
@@ -185,8 +186,68 @@ def get_memberID_by_name(nodeLabel, memberList):
             idx = i
     return idx
 
+def get_orthogonal_vectors(vector):
+    i_norm = vector / np.linalg.norm(vector)
+    if np.allclose(i_norm, [1, 0, 0]):
+        temp_vector = np.array([0, 1, 0])  # Use y-axis if normal is x-axis
+    else:
+        temp_vector = np.array([1, 0, 0])
+
+    v1 = np.cross(i_norm, temp_vector)
+    v1 = v1 / np.linalg.norm(v1)
+
+    v2 = np.cross(i_norm, v1)
+    v2 = v2 / np.linalg.norm(v2)
+
+    return v1,v2
+
 def generate_face_verticies(member, nodes):
-    pass
+    i = nodes[member.inode-1]
+    j = nodes[member.jnode-1]
+
+    dir = np.array([j.x - i.x, j.y - i.y, j.z - i.z])
+
+    i_vec = np.array([i.x,i.y,i.z])
+    j_vec = np.array([j.x,j.y,j.z])
+
+    v1,v2 = get_orthogonal_vectors(dir)
+
+    half_width_vec = member.width / 2*v1
+    half_height_vec = member.height / 2*v2
+
+    corners = []
+
+    # Create the four corners of the face
+    corners.append(i_vec + half_width_vec + half_height_vec)
+    corners.append(i_vec - half_width_vec + half_height_vec)
+    corners.append(i_vec - half_width_vec - half_height_vec)
+    corners.append(i_vec + half_width_vec - half_height_vec)
+
+    corners.append(j_vec + half_width_vec + half_height_vec)
+    corners.append(j_vec - half_width_vec + half_height_vec)
+    corners.append(j_vec - half_width_vec - half_height_vec)
+    corners.append(j_vec + half_width_vec - half_height_vec)
+
+    faces = [
+            [1, 2, 3, 4],  # Bottom face
+            [5, 6, 7, 8],  # Top face
+            [1, 2, 6, 5],  # Side face
+            [2, 3, 7, 6],  # Side face
+            [3, 4, 8, 7],  # Side face
+            [4, 1, 5, 8]   # Side face
+        ]
+
+    return np.array(corners), faces
+
+def print_prism_obj(verticies, faces):
+    obj_file = open("output.obj", "w")
+
+
+    for i, vertex in enumerate(verticies, start=1):
+        obj_file.write(f"v {vertex[0]} {vertex[1]} {vertex[2]}\n")
+
+    for face in faces:
+        obj_file.write(f"f {' '.join(map(str, face))}\n")
 
 HEADINGS = ['UNITS', 'NODES','.MEMBERS_MAIN_DATA']
 END = 'END'
@@ -220,6 +281,21 @@ def main():
     
     idx=get_memberID_by_name("M90",members)
 
+    all_verticies =[]
+    all_faces = []
+    vertex_count = 0
+
+    for member in members:
+        corners, faces = generate_face_verticies(member,nodes)
+
+        all_verticies.extend(corners)
+
+        faces = [[vertex_count +idx for idx in face] for face in faces]
+        all_faces.extend(faces)
+
+        vertex_count += corners.__len__()
+    
+    print_prism_obj(all_verticies, all_faces)
 
 if __name__=="__main__":
     main()
