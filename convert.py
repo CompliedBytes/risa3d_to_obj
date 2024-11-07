@@ -1,5 +1,3 @@
-import math
-import re
 from dataclasses import dataclass
 import numpy as np
 
@@ -224,8 +222,6 @@ def gen_rect_face_verticies(member, nodes):
     corners = []
 
     # Create the four corners of the face
-    
-
     corners.append(i_vec + half_width_vec + half_height_vec)
     corners.append(i_vec - half_width_vec + half_height_vec)
     corners.append(i_vec - half_width_vec - half_height_vec)
@@ -344,8 +340,6 @@ def convert(file):
 
     for member in members:
         compute_and_set_angles(member,nodes)
-    
-    #idx=get_memberID_by_name("M90",members)
 
     all_verticies =[]
     all_faces = []
