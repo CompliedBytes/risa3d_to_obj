@@ -4,6 +4,7 @@ import numpy as np
 from tkinter import ttk
 from tkinter import *
 from tkinter import filedialog
+from tkinter.tix import *
 
 @dataclass
 class Point:
@@ -209,16 +210,16 @@ def get_ortho_vectors(vector):
 
     return v1,v2
 
-def gen_rect_face_verticies(member, nodes):
+def gen_rect_face_vertices(member, nodes):
     i = nodes[member.inode-1]
     j = nodes[member.jnode-1]
 
-    dir = np.array([j.x - i.x, j.y - i.y, j.z - i.z])
+    dir_vec = np.array([j.x - i.x, j.y - i.y, j.z - i.z])
 
     i_vec = np.array([i.x,i.y,i.z])
     j_vec = np.array([j.x,j.y,j.z])
     
-    v1,v2 = get_ortho_vectors(dir)
+    v1,v2 = get_ortho_vectors(dir_vec)
     half_width_vec = member.width / 2*v1
     half_height_vec = member.height / 2*v2
 
@@ -246,21 +247,20 @@ def gen_rect_face_verticies(member, nodes):
 
     return np.array(corners), faces
 
-def gen_circ_face_verticies(member, nodes):
+def gen_circ_face_vertices(member, nodes):
     i = nodes[member.inode-1]
     j = nodes[member.jnode-1]
 
-    dir = np.array([j.x - i.x, j.y - i.y, j.z - i.z])
+    dir_vec = np.array([j.x - i.x, j.y - i.y, j.z - i.z])
 
     i_vec = np.array([i.x,i.y,i.z])
     j_vec = np.array([j.x,j.y,j.z])
     
-    v1, v2 = get_ortho_vectors(dir)
+    v1, v2 = get_ortho_vectors(dir_vec)
     half_width_vect = v1 * member.radius/2
     half_height_vect = v2 * member.radius/2
    
     circle_size = 16
-    arc_range = int(circle_size/4)
     arc_deg = 2*np.pi/circle_size
 
     corners = []
@@ -279,13 +279,13 @@ def gen_circ_face_verticies(member, nodes):
     # Create the i-node meshes
     for i in range(2, circle_size+1):
         faces.append([1, i, i+1])
-        if i == 16:
+        if i == circle_size:
             faces.append([1, i+1, 2])
     # Create the j-node meshes
     for i in range(2+circle_size, 2*circle_size+2):
-        faces.append([18, i, i+1])
-        if i == 33:
-            faces.append([18, i+1, 19])
+        faces.append([circle_size+2, i, i+1])
+        if i == 2*circle_size+1:
+            faces.append([circle_size+2, i+1, 19])
     # Create the i->j meshes
     for i in range(2, circle_size+2):
         if i == circle_size+1:
@@ -350,10 +350,10 @@ def convert(file):
 
     for member in members:
         if(member.radius == 0):
-            corners, faces = gen_rect_face_verticies(member,nodes)
+            corners, faces = gen_rect_face_vertices(member,nodes)
             faces = [[vertex_count +idx for idx in face] for face in faces]
         else:
-            corners, faces = gen_circ_face_verticies(member,nodes)
+            corners, faces = gen_circ_face_vertices(member,nodes)
             faces = [[vertex_count +idx for idx in face] for face in faces]
         all_verticies.extend(corners)
         all_faces.extend(faces)
@@ -364,12 +364,7 @@ def convert(file):
 
 
 def main():
-    def OnEnter(message):
-        print(message)
-    
-    def OnLeave(message):
-        print(message)
-
+    # Advanced settings sub-page is in a callable function that is called when the user clicks on the "Advanced" button.
     def Advanced_Settings():
         advanced = Toplevel()
         advanced.title("Advanced Settings")
@@ -379,31 +374,39 @@ def main():
         style.configure('TLabel', background=BACKGROUND_COLOR, foreground='black')
         style.configure('TCheckbutton', background=BACKGROUND_COLOR)
         
+        tool_tip = Balloon(advanced)
+
         advframe = ttk.Frame(advanced, padding="3 3 12 12")
         advframe.grid(column=0, row=0, sticky=(N, W, E, S))
         root.columnconfigure(0, weight=1)
         root.rowconfigure(0, weight=1)
         ttk.Label(advframe, text="Advanced Settings", font=("Arial", 15)).grid(column=0, row = 0, padx=(25,25), pady=(5,10))
 
-        dim_options_label = ttk.Label(advframe, text="Advanced 2D Options", foreground="black").grid(column=0, row=1, padx=(0,0), pady=(10,0))
+        # 2D View Options Section.
+        dim_options_label = ttk.Label(advframe, text="Advanced 2D Options", foreground="black")
+        dim_options_label.grid(column=0, row=1, padx=(0,0), pady=(10,0))
+        tool_tip.bind_widget(dim_options_label, balloonmsg="Specify which 2D views you'd like generated.\nDefault is all of them.")
         dim_options_frame = ttk.Frame(advframe)
         side_button = ttk.Checkbutton(dim_options_frame, text="Side", variable=side, onvalue=1, offvalue=0).grid(column=0, row=0, padx=(0,10))
         top_button = ttk.Checkbutton(dim_options_frame, text="Top", variable=top, onvalue=1, offvalue=0).grid(column=1, row=0, padx=(10,10))
         bottom_button = ttk.Checkbutton(dim_options_frame, text="Bottom", variable=bottom, onvalue=1, offvalue=0).grid(column=2, row=0, padx=(10,0))
         dim_options_frame.grid(column=0, row=2, padx=(0,0), pady=(10,10))
 
+        # Cylinder Options Section.
         cyl_options_label = ttk.Label(advframe, text='Cylindrical Tube Detail', foreground="black")
-        cyl_options_labl = ttk.Label(advframe, text='Specify the number of wedges used to generate each cylinder.', foreground="black", font=("Arial", 8))
-        cyl_options_field = ttk.Entry(advframe, text='16', textvariable=cyl_vert, justify=LEFT)
+        cyl_options_field = ttk.Entry(advframe, textvariable=cyl_vert, justify=LEFT)
         cyl_options_label.grid(column=0, row=3, padx=(10,0), pady=(10,0))
-        cyl_options_labl.grid(column=0, row=4, padx=(10,0), pady=(10,0))
-        cyl_options_field.grid(column=0, row=5, padx=(10,0), pady=(10,10))
-        cyl_options_label.bind("<Enter>", lambda event: OnEnter("Enter"))
-        cyl_options_label.bind("<Leave>", lambda event: OnLeave(""))
+        cyl_options_field.grid(column=0, row=4, padx=(10,0), pady=(10,10))
+        tool_tip.bind_widget(cyl_options_label, balloonmsg="Number of side faces for generated cylinders.\nThe more faces, the closer they will be to an actual cylinder.\n16 is recommended.")
 
-        #exit_frame = ttk.Frame(advframe)
+        # Coordinate Precision Section.
+        prec_options_label = ttk.Label(advframe, text='Coordinate Precision', foreground="black")
+        prec_options_field = ttk.Entry(advframe, textvariable=coord_prec, justify=LEFT)
+        prec_options_label.grid(column=0, row=5, padx=(10,0), pady=(10,0))
+        prec_options_field.grid(column=0, row=6, padx=(10,0), pady=(10,10))
+        tool_tip.bind_widget(prec_options_label, balloonmsg="Number of decimal places to round to.\n3 (thousandths) is default.")
+
         exit_button = ttk.Button(advframe, text="Exit", command=advanced.destroy).grid(column=0, row=10, sticky=E)
-        #bottom_frame.grid(column=0, row=10, pady=(10,5), sticky=E)
         advanced.mainloop()
     
 
@@ -420,20 +423,28 @@ def main():
     root.columnconfigure(0, weight=1)
     root.rowconfigure(0, weight=1)
 
+    file = StringVar()
+    dim_var = StringVar()
+    side = IntVar(value=1)
+    top = IntVar(value=1)
+    bottom = IntVar(value=1)
+    cyl_vert = StringVar(value="16")
+    coord_prec = StringVar(value="3")
+
     ttk.Label(mainframe, text="UAA 3D File Conversion Tool", font=("Arial", 15)).grid(column=0, row = 0, padx=(25,25), pady=(5,10))
 
-    file = StringVar()
+    
     file_frame = ttk.Frame(mainframe)
     file_button = ttk.Button(file_frame, text="Select File", command=lambda: on_select(file,file_label))
     file_label = ttk.Label(file_frame, text="                                                         ", background="white", relief='sunken')
-    file_button.grid(column=0, row=0, sticky = 'W')# side='left')
+    file_button.grid(column=0, row=0, sticky = 'W')
     file_label.grid(column=1, row=0, padx=(5,0), pady=(0,0))
     file_frame.grid(column=0, row=1, padx=(25,25), pady=(10,10))
 
-    dimvar = StringVar()
+    
     dim_frame = ttk.Frame(mainframe)
     dim_label = ttk.Label(dim_frame, text="2D/3D:", foreground="black").grid(column=0, row=0, padx=(0,5), pady=(0,0))
-    dim_box = ttk.Combobox(dim_frame, textvariable=dimvar)
+    dim_box = ttk.Combobox(dim_frame, textvariable=dim_var)
     # Add the values to the combobox
     dim_box['values'] = ('2D', '3D','Both')
     # Do not allow the user to edit the values
@@ -445,10 +456,7 @@ def main():
     dim_frame.grid(column=0, row=2, padx=(0,0), pady=(10,10))
 
 
-    side = IntVar()
-    top = IntVar()
-    bottom = IntVar()
-    cyl_vert = StringVar()
+
 
     bottom_frame = ttk.Frame(mainframe)
     advanced_button = ttk.Button(bottom_frame, text="Advanced", command =lambda: Advanced_Settings()).grid(column=0, row=0, padx=(0,20), pady=(0,0))
