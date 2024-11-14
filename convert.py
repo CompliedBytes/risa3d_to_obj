@@ -51,9 +51,12 @@ class Member:
             cleaned_value = ''.join(char for char in dimensions[0] if char.isdigit() or char == '.' or char == '-')
             self.radius = float(cleaned_value)
         else:
-            self.width = float(dimensions[0])
-            self.height = float(dimensions[1])
-            self.thickness = float(dimensions[2])
+            cleaned_value = ''.join(char for char in dimensions[0] if char.isdigit() or char == '.' or char == '-')
+            self.width = float(cleaned_value)
+            cleaned_value = ''.join(char for char in dimensions[1] if char.isdigit() or char == '.' or char == '-')
+            self.height = float(cleaned_value)
+            cleaned_value = ''.join(char for char in dimensions[2] if char.isdigit() or char == '.' or char == '-')
+            self.thickness = float(cleaned_value)
     
     def get_i_coordinates(self,nodes):
         x = nodes[self.inode-1].x
