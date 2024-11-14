@@ -375,7 +375,9 @@ def main():
         style.configure('TCheckbutton', background=BACKGROUND_COLOR)
         
         tool_tip = Balloon(advanced)
-
+        for tip in tool_tip.subwidgets_all():
+            tip.config(bg='white')
+        
         advframe = ttk.Frame(advanced, padding="3 3 12 12")
         advframe.grid(column=0, row=0, sticky=(N, W, E, S))
         root.columnconfigure(0, weight=1)
