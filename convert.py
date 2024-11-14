@@ -363,8 +363,50 @@ def convert(file):
     print("file converted!")
 
 
-
 def main():
+    def OnEnter(message):
+        print(message)
+    
+    def OnLeave(message):
+        print(message)
+
+    def Advanced_Settings():
+        advanced = Toplevel()
+        advanced.title("Advanced Settings")
+        style = ttk.Style(advanced)
+        style.configure('UFrame', background=BACKGROUND_COLOR, foreground='black')
+        style.configure('TFrame', background=BACKGROUND_COLOR, foreground='black')
+        style.configure('TLabel', background=BACKGROUND_COLOR, foreground='black')
+        style.configure('TCheckbutton', background=BACKGROUND_COLOR)
+        
+        advframe = ttk.Frame(advanced, padding="3 3 12 12")
+        advframe.grid(column=0, row=0, sticky=(N, W, E, S))
+        root.columnconfigure(0, weight=1)
+        root.rowconfigure(0, weight=1)
+        ttk.Label(advframe, text="Advanced Settings", font=("Arial", 15)).grid(column=0, row = 0, padx=(25,25), pady=(5,10))
+
+        dim_options_label = ttk.Label(advframe, text="Advanced 2D Options", foreground="black").grid(column=0, row=1, padx=(0,0), pady=(10,0))
+        dim_options_frame = ttk.Frame(advframe)
+        side_button = ttk.Checkbutton(dim_options_frame, text="Side", variable=side, onvalue=1, offvalue=0).grid(column=0, row=0, padx=(0,10))
+        top_button = ttk.Checkbutton(dim_options_frame, text="Top", variable=top, onvalue=1, offvalue=0).grid(column=1, row=0, padx=(10,10))
+        bottom_button = ttk.Checkbutton(dim_options_frame, text="Bottom", variable=bottom, onvalue=1, offvalue=0).grid(column=2, row=0, padx=(10,0))
+        dim_options_frame.grid(column=0, row=2, padx=(0,0), pady=(10,10))
+
+        cyl_options_label = ttk.Label(advframe, text='Cylindrical Tube Detail', foreground="black")
+        cyl_options_labl = ttk.Label(advframe, text='Specify the number of wedges used to generate each cylinder.', foreground="black", font=("Arial", 8))
+        cyl_options_field = ttk.Entry(advframe, text='16', textvariable=cyl_vert, justify=LEFT)
+        cyl_options_label.grid(column=0, row=3, padx=(10,0), pady=(10,0))
+        cyl_options_labl.grid(column=0, row=4, padx=(10,0), pady=(10,0))
+        cyl_options_field.grid(column=0, row=5, padx=(10,0), pady=(10,10))
+        cyl_options_label.bind("<Enter>", lambda event: OnEnter("Enter"))
+        cyl_options_label.bind("<Leave>", lambda event: OnLeave(""))
+
+        #exit_frame = ttk.Frame(advframe)
+        exit_button = ttk.Button(advframe, text="Exit", command=advanced.destroy).grid(column=0, row=10, sticky=E)
+        #bottom_frame.grid(column=0, row=10, pady=(10,5), sticky=E)
+        advanced.mainloop()
+    
+
     root = Tk()
     root.title("RISA-3D to OBJ Converter")
     style = ttk.Style(root)
@@ -406,17 +448,13 @@ def main():
     side = IntVar()
     top = IntVar()
     bottom = IntVar()
-    options_label = ttk.Label(mainframe, text="Advanced 2D Options", foreground="black").grid(column=0, row=3, padx=(0,0), pady=(10,0))
-    options_frame = ttk.Frame(mainframe)
-    side_button = ttk.Checkbutton(options_frame, text="Side", variable=side, onvalue=1, offvalue=0).grid(column=0, row=0, padx=(0,10))
-    top_button = ttk.Checkbutton(options_frame, text="Top", variable=side, onvalue=1, offvalue=0).grid(column=1, row=0, padx=(10,10))
-    bottom_button = ttk.Checkbutton(options_frame, text="Bottom", variable=side, onvalue=1, offvalue=0).grid(column=2, row=0, padx=(10,0))
-    options_frame.grid(column=0, row=4, padx=(0,0), pady=(10,10))
+    cyl_vert = StringVar()
 
     bottom_frame = ttk.Frame(mainframe)
-    convert_button = ttk.Button(bottom_frame, text="Convert", command =lambda: convert(file)).grid(column=0, row=0, padx=(0,25), pady=(0,0))
-    exit_button = ttk.Button(bottom_frame, text="Exit", command=root.destroy).grid(column=1, row=0, padx=(25,0), pady=(0,0))
-    bottom_frame.grid(column=0, row=5, padx=(0,0), pady=(10,5))
+    advanced_button = ttk.Button(bottom_frame, text="Advanced", command =lambda: Advanced_Settings()).grid(column=0, row=0, padx=(0,20), pady=(0,0))
+    convert_button = ttk.Button(bottom_frame, text="Convert", command =lambda: convert(file)).grid(column=1, row=0, padx=(20,20), pady=(0,0))
+    exit_button = ttk.Button(bottom_frame, text="Exit", command=root.destroy).grid(column=2, row=0, padx=(20,0), pady=(0,0))
+    bottom_frame.grid(column=0, row=5, padx=(10,0), pady=(10,5))
 
     root.mainloop()
 
