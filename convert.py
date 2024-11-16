@@ -31,6 +31,7 @@ class Member:
     label: str
     design_list: str
     shape_label: str
+    views: str
     # These are the node numbers in sequential order and not the node label for some reason in the RISA format
     inode: int
     jnode: int
@@ -150,10 +151,71 @@ def get_members(data):
         rotation = float(temp[3])
         offset = int(temp[4])
         material = int(temp[7])
+        views = ['3D']
 
-        member = Member(label, design_list, shape_label, inode, jnode, knode, rotation, offset, material)
+        member = Member(label, design_list, shape_label, views, inode, jnode, knode, rotation, offset, material)
         members.append(member)
     return members
+
+def get_extreme_coords(members, nodes):
+    min_x = 10000
+    min_y = 10000
+    min_z = 10000
+    max_x = 0
+    max_y = 0
+    max_z = 0
+
+    for member in members:
+        i_node = nodes[member.inode]
+        j_node = nodes[member.jnode]
+
+        if i_node.x <= min_x:
+            min_x = i_node.x
+        if j_node.x <= min_x:
+            min_x = j_node.x
+        if i_node.y <= min_y:
+            min_y = i_node.y
+        if j_node.y <= min_y:
+            min_y = j_node.y
+        if i_node.z <= min_z:
+            min_z = i_node.z
+        if j_node.z <= min_z:
+            min_z = j_node.z
+        
+        if i_node.x >= max_x:
+            max_x = i_node.x
+        if j_node.x >= max_x:
+            max_x = j_node.x
+        if i_node.y >= max_y:
+            max_y = i_node.y
+        if j_node.y >= max_y:
+            max_y = j_node.y
+        if i_node.z >= max_z:
+            max_z = i_node.z
+        if j_node.z >= max_z:
+            max_z = j_node.z
+        
+        return min_x, min_y, min_z, max_x, max_y, max_z
+
+
+def get_views(members, nodes):
+    ext_coords = get_extreme_coords(members, nodes)
+    print(ext_coords)
+    for member in members:
+        i_node = nodes[member.inode-1]
+        j_node = nodes[member.jnode-1]
+        dir_vec = np.array([j_node.x - i_node.x, j_node.y - i_node.y, j_node.z - i_node.z])
+
+        # if abs(dir_vec[0]) % 90 == 0:
+        #     member.views.append('top')
+        if i_node.y == ext_coords[4] and j_node.y == ext_coords[4]:
+            member.views.append('top')
+        if i_node.y == ext_coords[1] and j_node.y == ext_coords[1]:
+            member.views.append('bottom')
+        if i_node.z == ext_coords[2] and j_node.z == ext_coords[2]:
+            member.views.append('side1')
+        if i_node.z == ext_coords[5] and j_node.z == ext_coords[5]:
+            member.views.append('side2')
 
 # This function takes in a vector and a plane normal
 # Then it finds the angle the vector makes with that plane and returns it in degrees
@@ -172,30 +234,27 @@ def get_plane_angle(vector, normal):
 # This function takes in a member and the set of nodes
 # Then it will compute the angles made with each axis (yz,xz,xy)
 # It will update the member object with the new angles found
-def compute_and_set_angles(member, nodes):
-    
-    #print(member.label,nodes[member.inode-1],nodes[member.jnode-1])
+def compute_and_set_angles(members, nodes):
+    for member in members:
+        # Creates a vector from the i and j nodes of the member
+        i_node = nodes[member.inode-1]
+        j_node = nodes[member.jnode-1]
+        member_vect = np.array([[j_node.x - i_node.x],[j_node.y - i_node.y],[j_node.z - i_node.z]])
+        
+        yz_normal = np.array([1,0,0])
+        xz_normal = np.array([0,1,0])
+        xy_normal = np.array([0,0,1])
 
-    # Creates a vector from the i and j nodes of the member
-    i = nodes[member.inode-1]
-    j = nodes[member.jnode-1]
-    member_vect = np.array([[j.x - i.x],[j.y - i.y],[j.z - i.z]])
-    
-    yz_normal = np.array([1,0,0])
-    xz_normal = np.array([0,1,0])
-    xy_normal = np.array([0,0,1])
-
-    #The .item() here is used to convert from numpy flot to python flot
-    member.theta_yz = get_plane_angle(member_vect, yz_normal).item()
-    member.theta_xz = get_plane_angle(member_vect, xz_normal).item()
-    member.theta_xy = get_plane_angle(member_vect, xy_normal).item()
+        #The .item() here is used to convert from numpy flot to python flot
+        member.theta_yz = get_plane_angle(member_vect, yz_normal).item()
+        member.theta_xz = get_plane_angle(member_vect, xz_normal).item()
+        member.theta_xy = get_plane_angle(member_vect, xy_normal).item()
 
 def get_memberID_by_name(nodeLabel, memberList):
-    for i in range(memberList.__len__()):
-        member = memberList[i]
+    for idx in range(memberList.__len__()):
+        member = memberList[idx]
         if member.label == nodeLabel:
-            idx = i
-    return idx
+            return idx
 
 def get_ortho_vectors(vector):
     i_norm = vector / np.linalg.norm(vector)   
@@ -208,20 +267,20 @@ def get_ortho_vectors(vector):
     v2 = np.cross(i_norm, v1)
     v2 = v2 / np.linalg.norm(v2)
 
-    return v1,v2
+    return v1, v2
 
-def gen_rect_face_vertices(member, nodes):
-    i = nodes[member.inode-1]
-    j = nodes[member.jnode-1]
+def gen_rect_face_vertices(member, nodes, options):
+    i_node = nodes[member.inode-1]
+    j_node = nodes[member.jnode-1]
 
-    dir_vec = np.array([j.x - i.x, j.y - i.y, j.z - i.z])
+    dir_vec = np.array([j_node.x - i_node.x, j_node.y - i_node.y, j_node.z - i_node.z])
 
-    i_vec = np.array([i.x,i.y,i.z])
-    j_vec = np.array([j.x,j.y,j.z])
+    i_vec = np.array([i_node.x, i_node.y, i_node.z])
+    j_vec = np.array([j_node.x, j_node.y, j_node.z])
     
     v1,v2 = get_ortho_vectors(dir_vec)
-    half_width_vec = member.width / 2*v1
-    half_height_vec = member.height / 2*v2
+    half_width_vec = member.width / 2 * v1
+    half_height_vec = member.height / 2 * v2
 
     corners = []
 
@@ -247,14 +306,14 @@ def gen_rect_face_vertices(member, nodes):
 
     return np.array(corners), faces
 
-def gen_circ_face_vertices(member, nodes):
-    i = nodes[member.inode-1]
-    j = nodes[member.jnode-1]
+def gen_circ_face_vertices(member, nodes, options):
+    i_node = nodes[member.inode-1]
+    j_node = nodes[member.jnode-1]
 
-    dir_vec = np.array([j.x - i.x, j.y - i.y, j.z - i.z])
+    dir_vec = np.array([j_node.x - i_node.x, j_node.y - i_node.y, j_node.z - i_node.z])
 
-    i_vec = np.array([i.x,i.y,i.z])
-    j_vec = np.array([j.x,j.y,j.z])
+    i_vec = np.array([i_node.x, i_node.y, i_node.z])
+    j_vec = np.array([j_node.x, j_node.y, j_node.z])
     
     v1, v2 = get_ortho_vectors(dir_vec)
     half_width_vect = v1 * member.radius/2
@@ -301,9 +360,12 @@ def gen_circ_face_vertices(member, nodes):
 
     return np.array(corners), faces
 
-def print_prism_obj(verticies, faces):
-    obj_file = open("output.obj", "w")
+#def get_extreme_coords(members)
 
+
+
+def print_prism_obj(verticies, faces, filename):
+    obj_file = open(filename + ".obj", "w")
 
     for i, vertex in enumerate(verticies, start=1):
         obj_file.write(f"v {vertex[0]} {vertex[1]} {vertex[2]}\n")
@@ -311,57 +373,91 @@ def print_prism_obj(verticies, faces):
     for face in faces:
         obj_file.write(f"f {' '.join(map(str, face))}\n")
 
-def on_select(file,file_label):
-    selected_file = filedialog.askopenfilename()
-    if selected_file:
-        file.set(selected_file)
-        file_label.config(text=selected_file)
-
-def convert(file):
-    nodes = []
-    members = []
-    with open(file.get()) as file:
-        for line in file:
-            for heading in HEADINGS:
-                if heading in line and "END" not in line:
-                    line = line.strip()
-                    #print(f"heading, {heading}, found in line \"{line}\"")
-                    len = int(line.split('<')[-1].strip('>'))
-                    data = []
-                    match heading:
-                        case 'UNITS':
-                            for i in range(len):
-                                data.append(file.readline().strip())
-                        case 'NODES':
-                            for i in range(len):
-                                data.append(file.readline().strip())
-                            nodes = get_nodes(data)
-                        case '.MEMBERS_MAIN_DATA':
-                            for i in range(len):
-                                data.append(file.readline())
-                            members = get_members(data)
-
-    for member in members:
-        compute_and_set_angles(member,nodes)
-
-    all_verticies =[]
+def gen_view(members, nodes, filename, view, options):
+    all_vertices =[]
     all_faces = []
     vertex_count = 0
 
     for member in members:
-        if(member.radius == 0):
-            corners, faces = gen_rect_face_vertices(member,nodes)
-            faces = [[vertex_count +idx for idx in face] for face in faces]
-        else:
-            corners, faces = gen_circ_face_vertices(member,nodes)
-            faces = [[vertex_count +idx for idx in face] for face in faces]
-        all_verticies.extend(corners)
-        all_faces.extend(faces)
-        vertex_count += corners.__len__()
-        
-    print_prism_obj(all_verticies, all_faces)
-    print("file converted!")
+        if view in member.views:
+            if(member.radius == 0):
+                corners, faces = gen_rect_face_vertices(member, nodes, options)
+            else:
+                corners, faces = gen_circ_face_vertices(member, nodes, options)
 
+            faces = [[vertex_count +idx for idx in face] for face in faces]
+            all_vertices.extend(corners)
+            all_faces.extend(faces)
+            vertex_count += corners.__len__()
+    if len(all_vertices) == 0:
+        return "no members found"
+    print_prism_obj(all_vertices, all_faces, filename + '_' + view)
+
+def convert(filepath, dim_var, side, top, bottom, cyl_vert, coord_prec):
+    options = {"D" : dim_var.get(), "cyl": cyl_vert.get(), "prec": coord_prec.get()}
+    
+    full_filename = filepath.get().split('/')[-1]
+    if ".r3d" in full_filename:
+        filename = full_filename.strip('.r3d')
+        nodes = []
+        members = []
+        with open(filepath.get()) as file:
+            for line in file:
+                for heading in HEADINGS:
+                    if heading in line and "END" not in line:
+                        line = line.strip()
+                        len = int(line.split('<')[-1].strip('>'))
+                        data = []
+                        match heading:
+                            case 'UNITS':
+                                for i in range(len):
+                                    data.append(file.readline().strip())
+                            case 'NODES':
+                                for i in range(len):
+                                    data.append(file.readline().strip())
+                                nodes = get_nodes(data)
+                            case '.MEMBERS_MAIN_DATA':
+                                for i in range(len):
+                                    data.append(file.readline())
+                                members = get_members(data)
+
+        compute_and_set_angles(members, nodes)
+        get_views(members, nodes)
+        
+        if dim_var.get() == '3D':
+            gen_view(members, nodes, filename, '3D', options)
+        elif dim_var.get() == 'Both':
+            gen_view(members, nodes, filename, '3D', options)
+            if side.get() == 1:
+                gen_view(members, nodes, filename, 'side1', options)
+                gen_view(members, nodes, filename, 'side2', options)
+            if top.get() == 1:
+                gen_view(members, nodes, filename, 'top' , options)
+            if bottom.get() == 1:
+                gen_view(members, nodes, filename, 'bottom', options)
+        elif dim_var.get() == '2D':
+            if side.get() == 1:
+                gen_view(members, nodes, filename, 'side1', options)
+                gen_view(members, nodes, filename, 'side2', options)
+            if top.get() == 1:
+                gen_view(members, nodes, filename, 'top' , options)
+            if bottom.get() == 1:
+                gen_view(members, nodes, filename, 'bottom', options)
+        
+        print("file converted!")
+
+    elif ".3dd" in full_filename:
+        filename = full_filename.strip('.3dd')
+    else:
+        # Invalid filetype,  give an error message here.
+        print("Error: invalid file type")
+        return
+
+def on_select(file,file_label):
+    selected_file = filedialog.askopenfilename()
+    if selected_file:
+        file.set(selected_file)
+        file_label.config(text=selected_file)        
 
 def main():
     # Advanced settings sub-page is in a callable function that is called when the user clicks on the "Advanced" button.
@@ -426,14 +522,14 @@ def main():
     root.rowconfigure(0, weight=1)
 
     file = StringVar()
-    dim_var = StringVar()
+    dim_var = StringVar(value='Both')
     side = IntVar(value=1)
     top = IntVar(value=1)
     bottom = IntVar(value=1)
     cyl_vert = StringVar(value="16")
     coord_prec = StringVar(value="3")
 
-    ttk.Label(mainframe, text="UAA 3D File Conversion Tool", font=("Arial", 15)).grid(column=0, row = 0, padx=(25,25), pady=(5,10))
+    ttk.Label(mainframe, text="UAA 3D File Conversion Tool", font=("Arial", 15)).grid(column=0, row=0, padx=(25,25), pady=(5,10))
 
     
     file_frame = ttk.Frame(mainframe)
@@ -458,11 +554,9 @@ def main():
     dim_frame.grid(column=0, row=2, padx=(0,0), pady=(10,10))
 
 
-
-
     bottom_frame = ttk.Frame(mainframe)
     advanced_button = ttk.Button(bottom_frame, text="Advanced", command =lambda: Advanced_Settings()).grid(column=0, row=0, padx=(0,20), pady=(0,0))
-    convert_button = ttk.Button(bottom_frame, text="Convert", command =lambda: convert(file)).grid(column=1, row=0, padx=(20,20), pady=(0,0))
+    convert_button = ttk.Button(bottom_frame, text="Convert", command =lambda: convert(file, dim_var, side, top, bottom, cyl_vert, coord_prec)).grid(column=1, row=0, padx=(20,20), pady=(0,0))
     exit_button = ttk.Button(bottom_frame, text="Exit", command=root.destroy).grid(column=2, row=0, padx=(20,0), pady=(0,0))
     bottom_frame.grid(column=0, row=5, padx=(10,0), pady=(10,5))
 
