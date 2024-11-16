@@ -1,1 +1,1 @@
-pyinstaller --onefile -w 'convert.py'
+pyinstaller --onefile -w  'convert.py'
