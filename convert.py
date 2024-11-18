@@ -6,6 +6,11 @@ from tkinter import *
 from tkinter import filedialog
 from tktooltip import ToolTip
 
+
+def clean_dimension_input(dimension):
+    return ''.join(char for char in dimension if char.isdigit() or char == '.' or char == '-')
+
+
 @dataclass
 class Point:
     x: float
@@ -50,15 +55,11 @@ class Member:
     def __post_init__(self):
         dimensions = self.shape_label.upper().split('X')
         if len(dimensions) == 2:
-            cleaned_value = ''.join(char for char in dimensions[0] if char.isdigit() or char == '.' or char == '-')
-            self.radius = float(cleaned_value)
+            self.radius = float(clean_dimension_input(dimensions[0]))
         elif len(dimensions) == 3:
-            cleaned_value = ''.join(char for char in dimensions[0] if char.isdigit() or char == '.' or char == '-')
-            self.width = float(cleaned_value)
-            cleaned_value = ''.join(char for char in dimensions[1] if char.isdigit() or char == '.' or char == '-')
-            self.height = float(cleaned_value)
-            cleaned_value = ''.join(char for char in dimensions[2] if char.isdigit() or char == '.' or char == '-')
-            self.thickness = float(cleaned_value)
+            self.width = float(clean_dimension_input(dimensions[0]))
+            self.height = float(clean_dimension_input(dimensions[1]))
+            self.thickness = float(clean_dimension_input(dimensions[2]))
         else:
             print(f"{self.label} | {self.shape_label} | {self.material} | Dim len: {len(dimensions)}")
     
