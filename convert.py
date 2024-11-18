@@ -4,7 +4,7 @@ import numpy as np
 from tkinter import ttk
 from tkinter import *
 from tkinter import filedialog
-from tkinter.tix import *
+from tktooltip import ToolTip
 
 @dataclass
 class Point:
@@ -64,14 +64,12 @@ class Member:
         x = nodes[self.inode-1].x
         y = nodes[self.inode-1].y
         z = nodes[self.inode-1].z
-        #print(f"x:{x} y:{y} z:{z}")
         return [x,y,z]
     
     def get_j_coordinates(self,nodes):
         x = nodes[self.jnode-1].x
         y = nodes[self.jnode-1].y
         z = nodes[self.jnode-1].z
-        #print(f"x:{x} y:{y} z:{z}")
         return [x,y,z]
 
 # Constants
@@ -200,7 +198,6 @@ def get_extreme_coords(members, nodes):
 
 def get_views(members, nodes):
     ext_coords = get_extreme_coords(members, nodes)
-    print(ext_coords)
     for member in members:
         i_node = nodes[member.inode-1]
         j_node = nodes[member.jnode-1]
@@ -319,7 +316,7 @@ def gen_circ_face_vertices(member, nodes, options):
     half_width_vect = v1 * member.radius/2
     half_height_vect = v2 * member.radius/2
    
-    circle_size = 16
+    circle_size = int(options["cyl"])
     arc_deg = 2*np.pi/circle_size
 
     corners = []
@@ -391,7 +388,7 @@ def gen_view(members, nodes, filename, view, options):
             vertex_count += corners.__len__()
     if len(all_vertices) == 0:
         return "no members found"
-    print_prism_obj(all_vertices, all_faces, filename + '_' + view)
+    print_prism_obj(np.round(all_vertices, decimals=int(options["prec"])), all_faces, filename + '_' + view)
 
 def convert(filepath, dim_var, side, top, bottom, cyl_vert, coord_prec):
     options = {"D" : dim_var.get(), "cyl": cyl_vert.get(), "prec": coord_prec.get()}
@@ -443,7 +440,6 @@ def convert(filepath, dim_var, side, top, bottom, cyl_vert, coord_prec):
                 gen_view(members, nodes, filename, 'top' , options)
             if bottom.get() == 1:
                 gen_view(members, nodes, filename, 'bottom', options)
-        
         print("file converted!")
 
     elif ".3dd" in full_filename:
@@ -462,17 +458,14 @@ def on_select(file,file_label):
 def main():
     # Advanced settings sub-page is in a callable function that is called when the user clicks on the "Advanced" button.
     def Advanced_Settings():
-        advanced = Toplevel()
+        advanced = Toplevel(root)
+        advanced.grab_set()
         advanced.title("Advanced Settings")
         style = ttk.Style(advanced)
         style.configure('UFrame', background=BACKGROUND_COLOR, foreground='black')
         style.configure('TFrame', background=BACKGROUND_COLOR, foreground='black')
         style.configure('TLabel', background=BACKGROUND_COLOR, foreground='black')
         style.configure('TCheckbutton', background=BACKGROUND_COLOR)
-        
-        tool_tip = Balloon(advanced)
-        for tip in tool_tip.subwidgets_all():
-            tip.config(bg='white')
         
         advframe = ttk.Frame(advanced, padding="3 3 12 12")
         advframe.grid(column=0, row=0, sticky=(N, W, E, S))
@@ -483,11 +476,14 @@ def main():
         # 2D View Options Section.
         dim_options_label = ttk.Label(advframe, text="Advanced 2D Options", foreground="black")
         dim_options_label.grid(column=0, row=1, padx=(0,0), pady=(10,0))
-        tool_tip.bind_widget(dim_options_label, balloonmsg="Specify which 2D views you'd like generated.\nDefault is all of them.")
+        ToolTip(dim_options_label, msg="Specify which 2D views you'd like generated.\nDefault is all of them.", delay=0.25)
         dim_options_frame = ttk.Frame(advframe)
-        side_button = ttk.Checkbutton(dim_options_frame, text="Side", variable=side, onvalue=1, offvalue=0).grid(column=0, row=0, padx=(0,10))
-        top_button = ttk.Checkbutton(dim_options_frame, text="Top", variable=top, onvalue=1, offvalue=0).grid(column=1, row=0, padx=(10,10))
-        bottom_button = ttk.Checkbutton(dim_options_frame, text="Bottom", variable=bottom, onvalue=1, offvalue=0).grid(column=2, row=0, padx=(10,0))
+        side_button = ttk.Checkbutton(dim_options_frame, text="Side", variable=side, onvalue=1, offvalue=0)
+        top_button = ttk.Checkbutton(dim_options_frame, text="Top", variable=top, onvalue=1, offvalue=0)
+        bottom_button = ttk.Checkbutton(dim_options_frame, text="Bottom", variable=bottom, onvalue=1, offvalue=0)
+        side_button.grid(column=0, row=0, padx=(0,10))
+        top_button.grid(column=1, row=0, padx=(10,10))
+        bottom_button.grid(column=2, row=0, padx=(10,0))
         dim_options_frame.grid(column=0, row=2, padx=(0,0), pady=(10,10))
 
         # Cylinder Options Section.
@@ -495,16 +491,17 @@ def main():
         cyl_options_field = ttk.Entry(advframe, textvariable=cyl_vert, justify=LEFT)
         cyl_options_label.grid(column=0, row=3, padx=(10,0), pady=(10,0))
         cyl_options_field.grid(column=0, row=4, padx=(10,0), pady=(10,10))
-        tool_tip.bind_widget(cyl_options_label, balloonmsg="Number of side faces for generated cylinders.\nThe more faces, the closer they will be to an actual cylinder.\n16 is recommended.")
+        ToolTip(cyl_options_label, msg="Number of side faces for generated cylinders.\nThe more faces, the closer they will be to an actual cylinder.\n16 is recommended.", delay=0.25)
 
         # Coordinate Precision Section.
         prec_options_label = ttk.Label(advframe, text='Coordinate Precision', foreground="black")
         prec_options_field = ttk.Entry(advframe, textvariable=coord_prec, justify=LEFT)
         prec_options_label.grid(column=0, row=5, padx=(10,0), pady=(10,0))
         prec_options_field.grid(column=0, row=6, padx=(10,0), pady=(10,10))
-        tool_tip.bind_widget(prec_options_label, balloonmsg="Number of decimal places to round to.\n3 (thousandths) is default.")
+        ToolTip(prec_options_label, msg="Number of decimal places to round to.\n3 (thousandths) is default.", delay=0.25)
 
-        exit_button = ttk.Button(advframe, text="Exit", command=advanced.destroy).grid(column=0, row=10, sticky=E)
+        exit_button = ttk.Button(advframe, text="Exit", command=lambda: advanced.destroy())
+        exit_button.grid(column=0, row=10, sticky=E)
         advanced.mainloop()
     
 
@@ -530,8 +527,6 @@ def main():
     coord_prec = StringVar(value="3")
 
     ttk.Label(mainframe, text="UAA 3D File Conversion Tool", font=("Arial", 15)).grid(column=0, row=0, padx=(25,25), pady=(5,10))
-
-    
     file_frame = ttk.Frame(mainframe)
     file_button = ttk.Button(file_frame, text="Select File", command=lambda: on_select(file,file_label))
     file_label = ttk.Label(file_frame, text="                                                         ", background="white", relief='sunken')
@@ -541,23 +536,23 @@ def main():
 
     
     dim_frame = ttk.Frame(mainframe)
-    dim_label = ttk.Label(dim_frame, text="2D/3D:", foreground="black").grid(column=0, row=0, padx=(0,5), pady=(0,0))
-    dim_box = ttk.Combobox(dim_frame, textvariable=dim_var)
-    # Add the values to the combobox
+    dim_label = ttk.Label(dim_frame, text="2D/3D:", foreground="black")
+    dim_box = ttk.Combobox(dim_frame, textvariable=dim_var)   
     dim_box['values'] = ('2D', '3D','Both')
-    # Do not allow the user to edit the values
     dim_box.state(["readonly"])
-    # Set the default value to Both
     dim_box.set('Both')
-    # Place the combobox
+    dim_label.grid(column=0, row=0, padx=(0,5), pady=(0,0))
     dim_box.grid(column=1, row=0, padx=(5,0), pady=(0,0))
     dim_frame.grid(column=0, row=2, padx=(0,0), pady=(10,10))
 
 
     bottom_frame = ttk.Frame(mainframe)
-    advanced_button = ttk.Button(bottom_frame, text="Advanced", command =lambda: Advanced_Settings()).grid(column=0, row=0, padx=(0,20), pady=(0,0))
-    convert_button = ttk.Button(bottom_frame, text="Convert", command =lambda: convert(file, dim_var, side, top, bottom, cyl_vert, coord_prec)).grid(column=1, row=0, padx=(20,20), pady=(0,0))
-    exit_button = ttk.Button(bottom_frame, text="Exit", command=root.destroy).grid(column=2, row=0, padx=(20,0), pady=(0,0))
+    advanced_button = ttk.Button(bottom_frame, text="Advanced", command = lambda: Advanced_Settings())
+    convert_button = ttk.Button(bottom_frame, text="Convert", command =lambda: convert(file, dim_var, side, top, bottom, cyl_vert, coord_prec))
+    exit_button = ttk.Button(bottom_frame, text="Exit", command=root.destroy)
+    advanced_button.grid(column=0, row=0, padx=(0,20), pady=(0,0))
+    convert_button.grid(column=1, row=0, padx=(20,20), pady=(0,0))
+    exit_button.grid(column=2, row=0, padx=(20,0), pady=(0,0))
     bottom_frame.grid(column=0, row=5, padx=(10,0), pady=(10,5))
 
     root.mainloop()
