@@ -32,8 +32,8 @@ class Node:
 @dataclass
 class Shape:
     name: str
-    width: float
     height: float
+    width: float
     thickness: float
 
 @dataclass
@@ -62,8 +62,8 @@ class Member:
         if len(dimensions) == 2:
             self.radius = float(clean_dimension_input(dimensions[0]))
         elif len(dimensions) == 3:
-            self.width = float(clean_dimension_input(dimensions[0]))
-            self.height = float(clean_dimension_input(dimensions[1]))
+            self.height = float(clean_dimension_input(dimensions[0]))
+            self.width = float(clean_dimension_input(dimensions[1]))
             self.thickness = float(clean_dimension_input(dimensions[2]))
         else:
             print(f"{self.label} | {self.shape_label} | {self.material} | Dim len: {len(dimensions)}")
@@ -457,7 +457,7 @@ def convert(filepath, dim_var, side, top, bottom, cyl_vert, coord_prec):
 
         compute_and_set_angles(members, nodes)
         # Comment the line below out to keep the dimensions extracted from the SHAPE LABEL
-        #set_member_dimensions(members, shapes)
+        set_member_dimensions(members, shapes)
         get_views(members, nodes)
         
         if dim_var.get() == '3D':
