@@ -10,7 +10,6 @@ from tktooltip import ToolTip
 def clean_dimension_input(dimension):
     return ''.join(char for char in dimension if char.isdigit() or char == '.' or char == '-')
 
-
 @dataclass
 class Point:
     x: float
@@ -23,13 +22,19 @@ class Face:
     v2: Point
     v3: Point
 
-
 @dataclass
 class Node:
     label: str
     x: float
     y: float
     z: float
+
+@dataclass
+class Shape:
+    name: str
+    width: float
+    height: float
+    thickness: float
 
 @dataclass
 class Member:
@@ -77,7 +82,7 @@ class Member:
 
 # Constants
 BACKGROUND_COLOR = 'lightblue'
-HEADINGS = ['UNITS', 'NODES','.MEMBERS_MAIN_DATA']
+HEADINGS = ['UNITS', 'NODES','.MEMBERS_MAIN_DATA','SHAPES_LIST']
 END = 'END'
 
 def get_units(data):
@@ -157,6 +162,29 @@ def get_members(data):
         member = Member(label, design_list, shape_label, views, inode, jnode, knode, rotation, offset, material)
         members.append(member)
     return members
+
+def get_shapes_list(data):
+    shapes = []
+    for line in data:
+        line = line[1:-2].strip().split('"')
+        shape_name = line[0].strip()
+        shape_properties = line[1].strip().split()
+
+        shape = Shape(shape_name, 
+                      float(shape_properties[1]), 
+                      float(shape_properties[2]), 
+                      float(shape_properties[3]))
+        
+        shapes.append(shape)
+    return shapes
+
+def set_member_dimensions(members, shapes):
+    for member in members:
+        for shape in shapes:
+            if member.shape_label == shape.name:
+                member.width = shape.width
+                member.height = shape.height
+                member.thickness = shape.thickness
 
 def get_extreme_coords(members, nodes):
     min_x = 10000
@@ -412,6 +440,8 @@ def convert(filepath, dim_var, side, top, bottom, cyl_vert, coord_prec):
                             case 'UNITS':
                                 for i in range(len):
                                     data.append(file.readline().strip())
+                                units = get_units(data)
+                                print(units)
                             case 'NODES':
                                 for i in range(len):
                                     data.append(file.readline().strip())
@@ -420,8 +450,14 @@ def convert(filepath, dim_var, side, top, bottom, cyl_vert, coord_prec):
                                 for i in range(len):
                                     data.append(file.readline())
                                 members = get_members(data)
+                            case 'SHAPES_LIST':
+                                for i in range(len):
+                                    data.append(file.readline())
+                                shapes = get_shapes_list(data)
 
         compute_and_set_angles(members, nodes)
+        # Comment the line below out to keep the dimensions extracted from the SHAPE LABEL
+        #set_member_dimensions(members, shapes)
         get_views(members, nodes)
         
         if dim_var.get() == '3D':
