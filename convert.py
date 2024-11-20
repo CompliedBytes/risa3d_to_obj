@@ -1,7 +1,10 @@
 from dataclasses import dataclass
 import numpy as np
+
+
 import logging
 import os
+
 
 from tkinter import ttk
 from tkinter import *
@@ -11,7 +14,7 @@ from tktooltip import ToolTip
 LOGGING_LEVEL = logging.DEBUG
 LOG_FILE = "convert.log"
 
-def setup_logging():
+def setup_logging() -> None:
     # Check if the log file can be created or written to
     try:
         # Attempt to open the file in append mode
@@ -89,7 +92,7 @@ class Member:
     theta_xz: float = 0
     theta_xy: float = 0
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         dimensions = self.shape_label.upper().split('X')
         if len(dimensions) == 2:
             self.radius = float(clean_dimension_input(dimensions[0]))
@@ -100,13 +103,13 @@ class Member:
         else:
             logging.error(f"Dimesions not found for member: {self.label}, shape: {self.shape_label}")
     
-    def get_i_coordinates(self,nodes):
+    def get_i_coordinates(self,nodes) -> list[float]:
         x = nodes[self.inode-1].x
         y = nodes[self.inode-1].y
         z = nodes[self.inode-1].z
         return [x,y,z]
     
-    def get_j_coordinates(self,nodes):
+    def get_j_coordinates(self,nodes) -> list[float]:
         x = nodes[self.jnode-1].x
         y = nodes[self.jnode-1].y
         z = nodes[self.jnode-1].z
@@ -117,7 +120,7 @@ BACKGROUND_COLOR = 'lightblue'
 HEADINGS = ['UNITS', 'NODES','.MEMBERS_MAIN_DATA','SHAPES_LIST']
 END = 'END'
 
-def get_units(data):
+def get_units(data) -> dict[str, str]:
     # Unit Format: length_units  dim_units
     units_text = {}
     data = data[0].split(' ')
@@ -147,13 +150,13 @@ def get_units(data):
 
 # This function is used to extract the float from the scientific notation
 # This probably won't be needed since you can directly convert the string to float
-def extract_float(numStr):
+def extract_float(numStr) -> float:
     sci = numStr.split('e+')
     num = float(sci[0])*10**(int(sci[1]))
     return num
 
 # This function is used to get the nodes from the risa file
-def get_nodes(data):
+def get_nodes(data) -> list[Node]:
     # Node Format: Name/ID  X coord, Y coord, Z coord
     nodes = []
     for line in data:
@@ -169,7 +172,7 @@ def get_nodes(data):
     return nodes
 
 # This function is used to get the memebers from the risa file
-def get_members(data):
+def get_members(data: list[str]) -> list[Member]:
     members = []
     for line in data:
         line = line[1:-2].strip().split('"')
@@ -195,7 +198,7 @@ def get_members(data):
         members.append(member)
     return members
 
-def get_shapes_list(data):
+def get_shapes_list(data: list[str]) -> dict[str, Shape]:
     shapes = {}
     for line in data:
         line = line[1:-2].strip().split('"')
@@ -217,7 +220,7 @@ def get_shapes_list(data):
 
     return shapes
 
-def set_member_dimensions(members, shapes: dict[str, Shape]):
+def set_member_dimensions(members: list[Member], shapes: dict[str, Shape]) -> None:
     for member in members:
         if member.shape_label in shapes:
             shape: Shape = shapes[member.shape_label]
@@ -228,7 +231,7 @@ def set_member_dimensions(members, shapes: dict[str, Shape]):
         else:
             logging.error(f"Shape not found: {member.shape_label}")
 
-def get_extreme_coords(members, nodes):
+def get_extreme_coords(members: list[Member], nodes: list[Node]) -> tuple[float, float, float, float, float, float]:
     min_x = 10000
     min_y = 10000
     min_z = 10000
@@ -289,7 +292,9 @@ def get_views(members, nodes):
 
 # This function takes in a vector and a plane normal
 # Then it finds the angle the vector makes with that plane and returns it in degrees
-def get_plane_angle(vector, normal):
+def get_plane_angle(vector: np.array, normal: np.array) -> float:
+    #check vector and normal are the right size
+
     flat = vector.flatten()
     dot = np.dot(flat,normal)
 
@@ -308,7 +313,7 @@ def get_plane_angle(vector, normal):
 # This function takes in a member and the set of nodes
 # Then it will compute the angles made with each axis (yz,xz,xy)
 # It will update the member object with the new angles found
-def compute_and_set_angles(members, nodes):
+def compute_and_set_angles(members: list[Member], nodes: list[Node]) -> None:
     for member in members:
         # Creates a vector from the i and j nodes of the member
         i_node = nodes[member.inode-1]
@@ -324,13 +329,17 @@ def compute_and_set_angles(members, nodes):
         member.theta_xz = get_plane_angle(member_vect, xz_normal).item()
         member.theta_xy = get_plane_angle(member_vect, xy_normal).item()
 
-def get_memberID_by_name(nodeLabel, memberList):
+def get_memberID_by_name(nodeLabel: str, memberList: list[Member]) -> int:
     for idx in range(memberList.__len__()):
         member = memberList[idx]
         if member.label == nodeLabel:
             return idx
+    logging.warning(f"Member not found: {nodeLabel}")
+    return -1
 
-def get_ortho_vectors(vector):
+def get_ortho_vectors(vector: np.array) -> tuple[np.array, np.array]:
+    #Check that array is the right size
+
     norm = np.linalg.norm(vector)
     if norm == 0:
         logging.error("Zero division error input has no magnitude")
@@ -351,7 +360,7 @@ def get_ortho_vectors(vector):
 
     return v1, v2
 
-def gen_rect_face_vertices(member, nodes, options):
+def gen_rect_face_vertices(member: list[Member], nodes: list[Node], options) -> tuple[np.array, list[list[int]]]:
     i_node = nodes[member.inode-1]
     j_node = nodes[member.jnode-1]
 
