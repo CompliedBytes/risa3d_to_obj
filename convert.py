@@ -1,10 +1,16 @@
 from dataclasses import dataclass
 import numpy as np
+import logging
 
 from tkinter import ttk
 from tkinter import *
 from tkinter import filedialog
 from tktooltip import ToolTip
+
+
+
+
+
 
 
 def clean_dimension_input(dimension):
@@ -67,7 +73,7 @@ class Member:
             self.width = float(clean_dimension_input(dimensions[1]))
             self.thickness = float(clean_dimension_input(dimensions[2]))
         else:
-            print(f"ERR: {self.label} | {self.shape_label} | {self.material} | Dim len: {len(dimensions)}")
+            print(f"Dimesions not found for member: {self.label}")
     
     def get_i_coordinates(self,nodes):
         x = nodes[self.inode-1].x
@@ -165,7 +171,7 @@ def get_members(data):
     return members
 
 def get_shapes_list(data):
-    shapes = []
+    shapes = {}
     for line in data:
         line = line[1:-2].strip().split('"')
         shape_name = line[0].strip()
@@ -181,17 +187,19 @@ def get_shapes_list(data):
                         float(shape_properties[5]), 
                         float(shape_properties[6]),
                         float(shape_properties[4]))    
-        shapes.append(shape)
+        shapes[shape_name] = shape
     return shapes
 
-def set_member_dimensions(members, shapes):
+def set_member_dimensions(members, shapes: dict[str, Shape]):
     for member in members:
-        for shape in shapes:
-            if member.shape_label == shape.name:
-                member.width = shape.width
-                member.height = shape.height
-                member.thickness = shape.thickness
-                member.radius = shape.radius
+        if member.shape_label in shapes:
+            shape: Shape = shapes[member.shape_label]
+            member.height = shape.height
+            member.width = shape.width
+            member.thickness = shape.thickness
+            member.radius = shape.radius
+        else:
+            print(f"Shape not found: {member.shape_label}")
 
 def get_extreme_coords(members, nodes):
     min_x = 10000
@@ -462,7 +470,7 @@ def convert(filepath, dim_var, side, top, bottom, cyl_vert, coord_prec):
                                 shapes = get_shapes_list(data)
 
         compute_and_set_angles(members, nodes)
-        # Comment the line below out to keep the dimensions extracted from the SHAPE LABEL
+        # Comment the line below out to keep the dimensions extracted from the SHAPE_LABEL only
         set_member_dimensions(members, shapes)
         get_views(members, nodes)
         
@@ -587,7 +595,7 @@ def main():
     dim_box = ttk.Combobox(dim_frame, textvariable=dim_var)   
     dim_box['values'] = ('2D', '3D','Both')
     dim_box.state(["readonly"])
-    dim_box.set('Both')
+    dim_box.set('3D')
     dim_label.grid(column=0, row=0, padx=(0,5), pady=(0,0))
     dim_box.grid(column=1, row=0, padx=(5,0), pady=(0,0))
     dim_frame.grid(column=0, row=2, padx=(0,0), pady=(10,10))
