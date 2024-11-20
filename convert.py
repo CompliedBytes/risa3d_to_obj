@@ -67,7 +67,7 @@ class Member:
             self.width = float(clean_dimension_input(dimensions[1]))
             self.thickness = float(clean_dimension_input(dimensions[2]))
         else:
-            print(f"{self.label} | {self.shape_label} | {self.material} | Dim len: {len(dimensions)}")
+            print(f"ERR: {self.label} | {self.shape_label} | {self.material} | Dim len: {len(dimensions)}")
     
     def get_i_coordinates(self,nodes):
         x = nodes[self.inode-1].x
@@ -181,9 +181,6 @@ def get_shapes_list(data):
                         float(shape_properties[5]), 
                         float(shape_properties[6]),
                         float(shape_properties[4]))    
-            
-        print(shape)
-        
         shapes.append(shape)
     return shapes
 
@@ -451,7 +448,6 @@ def convert(filepath, dim_var, side, top, bottom, cyl_vert, coord_prec):
                                 for i in range(len):
                                     data.append(file.readline().strip())
                                 units = get_units(data)
-                                print(units)
                             case 'NODES':
                                 for i in range(len):
                                     data.append(file.readline().strip())
@@ -499,7 +495,9 @@ def convert(filepath, dim_var, side, top, bottom, cyl_vert, coord_prec):
         return
 
 def on_select(file,file_label):
-    selected_file = filedialog.askopenfilename()
+    selected_file = filedialog.askopenfilename(
+        filetypes=[("RISA/Modelsmart Files", "*.3dd *.r3d"), ("All Files", "*.*")]
+    )
     if selected_file:
         file.set(selected_file)
         file_label.config(text=selected_file)        
