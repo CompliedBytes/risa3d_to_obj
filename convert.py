@@ -7,10 +7,14 @@ from tkinter import *
 from tkinter import filedialog
 from tktooltip import ToolTip
 
-
-
-
-
+LOGGING_LEVEL = logging.DEBUG
+# ===== Logging setup =====
+logging.basicConfig(
+    level=LOGGING_LEVEL,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    filename="convert.log",
+    )
 
 
 def clean_dimension_input(dimension):
@@ -73,7 +77,7 @@ class Member:
             self.width = float(clean_dimension_input(dimensions[1]))
             self.thickness = float(clean_dimension_input(dimensions[2]))
         else:
-            print(f"Dimesions not found for member: {self.label}")
+            logging.error(f"Dimesions not found for member: {self.label}, shape: {self.shape_label}")
     
     def get_i_coordinates(self,nodes):
         x = nodes[self.inode-1].x
@@ -199,7 +203,7 @@ def set_member_dimensions(members, shapes: dict[str, Shape]):
             member.thickness = shape.thickness
             member.radius = shape.radius
         else:
-            print(f"Shape not found: {member.shape_label}")
+            logging.error(f"Shape not found: {member.shape_label}")
 
 def get_extreme_coords(members, nodes):
     min_x = 10000
@@ -408,6 +412,7 @@ def gen_circ_face_vertices(member, nodes, options):
 
 
 def print_prism_obj(verticies, faces, filename):
+    logging.info(f"Writing {filename}.obj")
     obj_file = open(filename + ".obj", "w")
 
     for i, vertex in enumerate(verticies, start=1):
@@ -417,6 +422,7 @@ def print_prism_obj(verticies, faces, filename):
         obj_file.write(f"f {' '.join(map(str, face))}\n")
 
 def gen_view(members, nodes, filename, view, options):
+    logging.info(f"Generating {view} view")
     all_vertices =[]
     all_faces = []
     vertex_count = 0
@@ -437,6 +443,8 @@ def gen_view(members, nodes, filename, view, options):
     print_prism_obj(np.round(all_vertices, decimals=int(options["prec"])), all_faces, filename + '_' + view)
 
 def convert(filepath, dim_var, side, top, bottom, cyl_vert, coord_prec):
+    logging.info("Conveting file...")
+
     options = {"D" : dim_var.get(), "cyl": cyl_vert.get(), "prec": coord_prec.get()}
     
     full_filename = filepath.get().split('/')[-1]
@@ -449,23 +457,23 @@ def convert(filepath, dim_var, side, top, bottom, cyl_vert, coord_prec):
                 for heading in HEADINGS:
                     if heading in line and "END" not in line:
                         line = line.strip()
-                        len = int(line.split('<')[-1].strip('>'))
+                        num_entries = int(line.split('<')[-1].strip('>'))
                         data = []
                         match heading:
                             case 'UNITS':
-                                for i in range(len):
+                                for i in range(num_entries):
                                     data.append(file.readline().strip())
                                 units = get_units(data)
                             case 'NODES':
-                                for i in range(len):
+                                for i in range(num_entries):
                                     data.append(file.readline().strip())
                                 nodes = get_nodes(data)
                             case '.MEMBERS_MAIN_DATA':
-                                for i in range(len):
+                                for i in range(num_entries):
                                     data.append(file.readline())
                                 members = get_members(data)
                             case 'SHAPES_LIST':
-                                for i in range(len):
+                                for i in range(num_entries):
                                     data.append(file.readline())
                                 shapes = get_shapes_list(data)
 
@@ -493,13 +501,13 @@ def convert(filepath, dim_var, side, top, bottom, cyl_vert, coord_prec):
                 gen_view(members, nodes, filename, 'top' , options)
             if bottom.get() == 1:
                 gen_view(members, nodes, filename, 'bottom', options)
-        print("file converted!")
+        logging.info("file converted!")
 
     elif ".3dd" in full_filename:
         filename = full_filename.strip('.3dd')
     else:
         # Invalid filetype,  give an error message here.
-        print("Error: invalid file type")
+        logging.error("invalid file type")
         return
 
 def on_select(file,file_label):
@@ -510,7 +518,11 @@ def on_select(file,file_label):
         file.set(selected_file)
         file_label.config(text=selected_file)        
 
-def main():
+
+
+def main()->None:
+
+    logging.info("Starting RISA-3D to OBJ Converter")
     # Advanced settings sub-page is in a callable function that is called when the user clicks on the "Advanced" button.
     def Advanced_Settings():
         advanced = Toplevel(root)
