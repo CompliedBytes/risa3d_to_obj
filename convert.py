@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import numpy as np
 import logging
+import os
 
 from tkinter import ttk
 from tkinter import *
@@ -180,6 +181,7 @@ def get_shapes_list(data):
         line = line[1:-2].strip().split('"')
         shape_name = line[0].strip()
         shape_properties = line[1].strip().split()
+
         if float(shape_properties[6]) != float(0):
             shape = Shape(shape_name, 
                         float(shape_properties[4]), 
@@ -192,6 +194,7 @@ def get_shapes_list(data):
                         float(shape_properties[6]),
                         float(shape_properties[4]))    
         shapes[shape_name] = shape
+
     return shapes
 
 def set_member_dimensions(members, shapes: dict[str, Shape]):
@@ -272,7 +275,11 @@ def get_plane_angle(vector, normal):
 
     vect_mag = np.linalg.norm(flat)
     norm_mag = np.linalg.norm(normal)
+
+    if vect_mag == 0 or norm_mag == 0:
+        logging.error("Zero division error input has no magnitude")
     cos_theta = dot / (vect_mag*norm_mag)
+
     theta_rad = np.arccos(cos_theta)
     theta_plane = 90 - np.degrees(theta_rad)
 
@@ -304,11 +311,19 @@ def get_memberID_by_name(nodeLabel, memberList):
             return idx
 
 def get_ortho_vectors(vector):
-    i_norm = vector / np.linalg.norm(vector)   
+    norm = np.linalg.norm(vector)
+    if norm == 0:
+        logging.error("Zero division error input has no magnitude")
+
+    i_norm = vector / norm
+    
     if np.allclose(i_norm, [1, 0, 0]) or np.allclose(i_norm, [-1, 0, 0]):
-        temp_vector = np.array([0, 1, 0])  # Use y-axis if normal is x-axis
+        temp_vector = np.array([0, 1, 0])  # Use y-axis if aligned with x-axis
+    elif np.allclose(i_norm, [0, 1, 0]) or np.allclose(i_norm, [0, -1, 0]):
+        temp_vector = np.array([0, 0, 1])  # Use z-axis if aligned with y-axis
     else:
-        temp_vector = np.array([1, 0, 0])
+        temp_vector = np.array([1, 0, 0])  # Default to x-axis otherwise
+
     v1 = np.cross(i_norm, temp_vector)
     v1 = v1 / np.linalg.norm(v1)
     v2 = np.cross(i_norm, v1)
@@ -439,6 +454,7 @@ def gen_view(members, nodes, filename, view, options):
             all_faces.extend(faces)
             vertex_count += corners.__len__()
     if len(all_vertices) == 0:
+        logging.error("No members found for gen_view")
         return "no members found"
     print_prism_obj(np.round(all_vertices, decimals=int(options["prec"])), all_faces, filename + '_' + view)
 
@@ -446,37 +462,52 @@ def convert(filepath, dim_var, side, top, bottom, cyl_vert, coord_prec):
     logging.info("Conveting file...")
 
     options = {"D" : dim_var.get(), "cyl": cyl_vert.get(), "prec": coord_prec.get()}
-    
-    full_filename = filepath.get().split('/')[-1]
+
+    file_path = filepath.get()
+    if not os.path.exists(file_path):
+        logging.error("File not found")
+        return
+
+    full_filename = file_path.split('/')[-1]
     if ".r3d" in full_filename:
         filename = full_filename.strip('.r3d')
         nodes = []
         members = []
-        with open(filepath.get()) as file:
-            for line in file:
-                for heading in HEADINGS:
-                    if heading in line and "END" not in line:
-                        line = line.strip()
-                        num_entries = int(line.split('<')[-1].strip('>'))
-                        data = []
-                        match heading:
-                            case 'UNITS':
-                                for i in range(num_entries):
-                                    data.append(file.readline().strip())
-                                units = get_units(data)
-                            case 'NODES':
-                                for i in range(num_entries):
-                                    data.append(file.readline().strip())
-                                nodes = get_nodes(data)
-                            case '.MEMBERS_MAIN_DATA':
-                                for i in range(num_entries):
-                                    data.append(file.readline())
-                                members = get_members(data)
-                            case 'SHAPES_LIST':
-                                for i in range(num_entries):
-                                    data.append(file.readline())
-                                shapes = get_shapes_list(data)
-
+        try:
+            with open(file_path, 'r') as file:
+                for line in file:
+                    for heading in HEADINGS:
+                        if heading in line and "END" not in line:
+                            line = line.strip()
+                            num_entries = int(line.split('<')[-1].strip('>'))
+                            data = []
+                            match heading:
+                                case 'UNITS':
+                                    for i in range(num_entries):
+                                        data.append(file.readline().strip())
+                                    units = get_units(data)
+                                case 'NODES':
+                                    for i in range(num_entries):
+                                        data.append(file.readline().strip())
+                                    nodes = get_nodes(data)
+                                case '.MEMBERS_MAIN_DATA':
+                                    for i in range(num_entries):
+                                        data.append(file.readline())
+                                    members = get_members(data)
+                                case 'SHAPES_LIST':
+                                    for i in range(num_entries):
+                                        data.append(file.readline())
+                                    shapes = get_shapes_list(data)
+        except FileNotFoundError:
+            logging.error("File not found")
+            return
+        except PermissionError:
+            logging.error("Permission denied, could not read file")
+            return
+        except Exception as e:
+            logging.error("An unknown error occurred")
+            return
+        
         compute_and_set_angles(members, nodes)
         # Comment the line below out to keep the dimensions extracted from the SHAPE_LABEL only
         set_member_dimensions(members, shapes)
