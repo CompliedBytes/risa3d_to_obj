@@ -33,8 +33,9 @@ class Node:
 class Shape:
     name: str
     height: float
-    width: float
     thickness: float
+    width: float
+    radius: float = 0
 
 @dataclass
 class Member:
@@ -169,11 +170,19 @@ def get_shapes_list(data):
         line = line[1:-2].strip().split('"')
         shape_name = line[0].strip()
         shape_properties = line[1].strip().split()
-
-        shape = Shape(shape_name, 
-                      float(shape_properties[1]), 
-                      float(shape_properties[2]), 
-                      float(shape_properties[3]))
+        if float(shape_properties[6]) != float(0):
+            shape = Shape(shape_name, 
+                        float(shape_properties[4]), 
+                        float(shape_properties[5]), 
+                        float(shape_properties[6]))
+        else:
+            shape = Shape(shape_name, 
+                        float(0), 
+                        float(shape_properties[5]), 
+                        float(shape_properties[6]),
+                        float(shape_properties[4]))    
+            
+        print(shape)
         
         shapes.append(shape)
     return shapes
@@ -185,6 +194,7 @@ def set_member_dimensions(members, shapes):
                 member.width = shape.width
                 member.height = shape.height
                 member.thickness = shape.thickness
+                member.radius = shape.radius
 
 def get_extreme_coords(members, nodes):
     min_x = 10000
