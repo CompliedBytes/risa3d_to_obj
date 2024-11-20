@@ -9,13 +9,33 @@ from tkinter import filedialog
 from tktooltip import ToolTip
 
 LOGGING_LEVEL = logging.DEBUG
-# ===== Logging setup =====
-logging.basicConfig(
-    level=LOGGING_LEVEL,
-    format="%(asctime)s | %(levelname)s | %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-    filename="convert.log",
-    )
+LOG_FILE = "convert.log"
+
+def setup_logging():
+    # Check if the log file can be created or written to
+    try:
+        # Attempt to open the file in append mode
+        with open(LOG_FILE, 'a') as f:
+            pass  # If this succeeds, the file is writable
+    except (IOError, OSError) as e:
+        print(f"Error: Cannot write to log file '{LOG_FILE}'. Falling back to console logging.")
+        logging.basicConfig(
+            level=LOGGING_LEVEL,
+            format="%(asctime)s | %(levelname)s | %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
+    else:
+        # If writable, proceed with file logging
+        logging.basicConfig(
+            level=LOGGING_LEVEL,
+            format="%(asctime)s | %(levelname)s | %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+            filename=LOG_FILE,
+        )
+
+setup_logging()
+logging.info("Logging setup complete.")
+
 
 
 def clean_dimension_input(dimension):
