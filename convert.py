@@ -546,7 +546,7 @@ def convert(file_list, dim_var, side, top, bottom, cyl_vert, coord_prec):
             
             if dim_var.get() == '3D':
                 gen_view(members, nodes, filename, '3D', options)
-            elif dim_var.get() == 'Both':
+            elif dim_var.get() == 'All':
                 gen_view(members, nodes, filename, '3D', options)
                 if side.get() == 1:
                     gen_view(members, nodes, filename, 'side1', options)
@@ -565,8 +565,8 @@ def convert(file_list, dim_var, side, top, bottom, cyl_vert, coord_prec):
                     gen_view(members, nodes, filename, 'bottom', options)
             logging.info("file converted!")
 
-        elif ".3dd" in full_filename:
-            filename = full_filename.strip('.3dd')
+        elif ".3dd" in filename:
+            filename = filename.strip('.3dd')
         else:
             # Invalid filetype,  give an error message here.
             logging.error("invalid file type")
@@ -580,10 +580,10 @@ def main()->None:
     logging.info("Starting RISA-3D to OBJ Converter")
     
     # Select/return filepath(s). Also updates the label displayed next to the "Select" button in the GUI.
-    def on_select(file,file_label):
+    def file_select(file,file_label):
         selected_file = filedialog.askopenfilename(
-            multiple=TRUE,    # Set to read-only mode.
-            filetypes=[("RISA/Modelsmart Files", "*.3dd *.r3d"), ("All Files", "*.*")]
+            multiple=TRUE,   # Allow multiple files to be selected.
+            filetypes=[("RISA/Modelsmart Files", "*.3dd *.r3d"), ("All Files", "*.*")]   # Limit searchable files to those with .3dd or .r3d extensions
         )
         if selected_file:
             if len(selected_file) > 1:
@@ -599,6 +599,13 @@ def main()->None:
                 file_list = selected_file[0]
                 file_label.config(text=selected_file[0])
             file.set(file_list)
+
+    # Select/return the destination directory that the converted files will be saved to.
+    def dest_select(dest_dir, dest_label):
+        selected_dest = filedialog.askdirectory()
+        if selected_dest:
+            dest_label.config(text=selected_dest)
+            dest_dir.set(selected_dest)
 
     # Advanced settings sub-page is in a callable function that is called when the user clicks on the "Advanced" button.
     def Advanced_Settings():
@@ -635,61 +642,71 @@ def main()->None:
         cyl_options_field = ttk.Entry(advframe, textvariable=cyl_vert, justify=LEFT)
         cyl_options_label.grid(column=0, row=3, padx=(10,0), pady=(10,0))
         cyl_options_field.grid(column=0, row=4, padx=(10,0), pady=(10,10))
-        ToolTip(cyl_options_label, msg="Number of side faces for generated cylinders.\nThe more faces, the closer they will be to an actual cylinder.\n16 is recommended.", delay=0.25)
+        ToolTip(cyl_options_label, msg="Number of side faces for generated cylinders.\nThe more faces, the closer they will be to an actual cylinder.\nDefault is 16.", delay=0.25)
 
         # Coordinate Precision Section.
         prec_options_label = ttk.Label(advframe, text='Coordinate Precision', foreground="black")
         prec_options_field = ttk.Entry(advframe, textvariable=coord_prec, justify=LEFT)
         prec_options_label.grid(column=0, row=5, padx=(10,0), pady=(10,0))
         prec_options_field.grid(column=0, row=6, padx=(10,0), pady=(10,10))
-        ToolTip(prec_options_label, msg="Number of decimal places to round to.\n3 (thousandths) is default.", delay=0.25)
+        ToolTip(prec_options_label, msg="Number of decimal places to round to.\nDefault is 3 (thousandths).", delay=0.25)
 
         exit_button = ttk.Button(advframe, text="Exit", command=lambda: advanced.destroy())
         exit_button.grid(column=0, row=10, sticky=E)
         advanced.mainloop()
     
-
     root = Tk()
     root.title("RISA-3D to OBJ Converter")
     style = ttk.Style(root)
     style.configure('UFrame', background=BACKGROUND_COLOR, foreground='black')
     style.configure('TFrame', background=BACKGROUND_COLOR, foreground='black')
     style.configure('TLabel', background=BACKGROUND_COLOR, foreground='black')
-    style.configure('TCheckbutton', background=BACKGROUND_COLOR)
-
     mainframe = ttk.Frame(root, padding="3 3 12 12")
     mainframe.grid(column=0, row=0, sticky=(N, W, E, S))
     root.columnconfigure(0, weight=1)
     root.rowconfigure(0, weight=1)
 
     file = StringVar(value=[])
-    dim_var = StringVar(value='Both')
+    dim_var = StringVar(value='All')
     side = IntVar(value=1)
     top = IntVar(value=1)
     bottom = IntVar(value=1)
     cyl_vert = StringVar(value="16")
     coord_prec = StringVar(value="3")
-    curr_dir = StringVar(value=os.getcwd())
+    dest_dir = StringVar(value=os.getcwd())
 
-    ttk.Label(mainframe, text="UAA 3D File Conversion Tool", font=("Arial", 15)).grid(column=0, row=0, padx=(25,25), pady=(5,10))
+    main_title = ttk.Label(mainframe, text="UAA 3D File Conversion Tool", font=("Arial", 15))
+    main_title.grid(column=0, row=0, padx=(25,25), pady=(5,10))
+    
+    file_title = ttk.Label(mainframe, text="Select Source File(s)", font=("Arial", 10))
     file_frame = ttk.Frame(mainframe)
-    file_button = ttk.Button(file_frame, text="Select File", command=lambda: on_select(file,file_label))
+    file_button = ttk.Button(file_frame, text="Select File", command=lambda: file_select(file,file_label))
     file_label = ttk.Label(file_frame, text="                                                         ", background="white", relief='sunken')
+    file_title.grid(column=0, row=1, padx=(25,25), pady=(0,0))
     file_button.grid(column=0, row=0, sticky = 'W')
     file_label.grid(column=1, row=0, padx=(5,0), pady=(0,0))
-    file_frame.grid(column=0, row=1, padx=(25,25), pady=(10,10))
+    file_frame.grid(column=0, row=2, padx=(25,25), pady=(5,10))
+    ToolTip(file_title, msg="Select the file(s) you'd like to convert.", delay=0.25)
 
+    dest_title = ttk.Label(mainframe, text="Select Destination Folder", font=("Arial", 10))
+    dest_frame = ttk.Frame(mainframe)
+    dest_button = ttk.Button(dest_frame, text="Select Folder", command=lambda: dest_select(dest_dir,dest_label))
+    dest_label = ttk.Label(dest_frame, text=dest_dir.get(), background="white", relief='sunken')
+    dest_title.grid(column=0, row=3, padx=(25,25), pady=(5,0))
+    dest_button.grid(column=0, row=0, sticky = 'W')
+    dest_label.grid(column=1, row=0, padx=(5,0), pady=(0,0))
+    dest_frame.grid(column=0, row=4, padx=(25,25), pady=(5,10))
+    ToolTip(dest_title, msg="Select the directory where you'd like the converted files created.", delay=0.25)
     
     dim_frame = ttk.Frame(mainframe)
-    dim_label = ttk.Label(dim_frame, text="2D/3D:", foreground="black")
+    dim_label = ttk.Label(dim_frame, text="2D/3D Views:", foreground="black")
     dim_box = ttk.Combobox(dim_frame, textvariable=dim_var)   
-    dim_box['values'] = ('2D', '3D','Both')
+    dim_box['values'] = ('2D', '3D','All')
     dim_box.state(["readonly"])
-    dim_box.set('3D')
     dim_label.grid(column=0, row=0, padx=(0,5), pady=(0,0))
     dim_box.grid(column=1, row=0, padx=(5,0), pady=(0,0))
-    dim_frame.grid(column=0, row=2, padx=(0,0), pady=(10,10))
-
+    dim_frame.grid(column=0, row=5, padx=(0,0), pady=(10,10))
+    ToolTip(dim_label, msg="Choose between only 2D views, only 3D views, or all views.\nAdditional 2D options are available in the Advanced menu.", delay=0.25)
 
     bottom_frame = ttk.Frame(mainframe)
     advanced_button = ttk.Button(bottom_frame, text="Advanced", command = lambda: Advanced_Settings())
@@ -698,7 +715,7 @@ def main()->None:
     advanced_button.grid(column=0, row=0, padx=(0,20), pady=(0,0))
     convert_button.grid(column=1, row=0, padx=(20,20), pady=(0,0))
     exit_button.grid(column=2, row=0, padx=(20,0), pady=(0,0))
-    bottom_frame.grid(column=0, row=5, padx=(10,0), pady=(10,5))
+    bottom_frame.grid(column=0, row=6, padx=(10,0), pady=(10,5))
 
     root.mainloop()
 
