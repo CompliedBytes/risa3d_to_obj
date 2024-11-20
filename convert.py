@@ -451,10 +451,6 @@ def gen_circ_face_vertices(member, nodes, options):
 
     return np.array(corners), faces
 
-#def get_extreme_coords(members)
-
-
-
 def print_prism_obj(verticies, faces, filename):
     logging.info(f"Writing {filename}.obj")
     obj_file = open(filename + ".obj", "w")
@@ -487,102 +483,123 @@ def gen_view(members, nodes, filename, view, options):
         return "no members found"
     print_prism_obj(np.round(all_vertices, decimals=int(options["prec"])), all_faces, filename + '_' + view)
 
-def convert(filepath, dim_var, side, top, bottom, cyl_vert, coord_prec):
-    logging.info("Conveting file...")
+def convert(file_list, dim_var, side, top, bottom, cyl_vert, coord_prec):
+    file_list = file_list.get().split('\'')
+    files = []
+    for i in file_list:
+        if ',' not in i and i != '(' and i != ')':
+            files.append(i)
 
-    options = {"D" : dim_var.get(), "cyl": cyl_vert.get(), "prec": coord_prec.get()}
+    for filepath in files:
+        logging.info("Conveting file: " + filepath)
 
-    file_path = filepath.get()
-    if not os.path.exists(file_path):
-        logging.error("File not found")
-        return
+        options = {"D" : dim_var.get(), "cyl": cyl_vert.get(), "prec": coord_prec.get()}
 
-    full_filename = file_path.split('/')[-1]
-    if ".r3d" in full_filename:
-        filename = full_filename.strip('.r3d')
-        nodes = []
-        members = []
-        try:
-            with open(file_path, 'r') as file:
-                for line in file:
-                    for heading in HEADINGS:
-                        if heading in line and "END" not in line:
-                            line = line.strip()
-                            num_entries = int(line.split('<')[-1].strip('>'))
-                            data = []
-                            match heading:
-                                case 'UNITS':
-                                    for i in range(num_entries):
-                                        data.append(file.readline().strip())
-                                    units = get_units(data)
-                                case 'NODES':
-                                    for i in range(num_entries):
-                                        data.append(file.readline().strip())
-                                    nodes = get_nodes(data)
-                                case '.MEMBERS_MAIN_DATA':
-                                    for i in range(num_entries):
-                                        data.append(file.readline())
-                                    members = get_members(data)
-                                case 'SHAPES_LIST':
-                                    for i in range(num_entries):
-                                        data.append(file.readline())
-                                    shapes = get_shapes_list(data)
-        except FileNotFoundError:
+        if not os.path.exists(filepath):
             logging.error("File not found")
             return
-        except PermissionError:
-            logging.error("Permission denied, could not read file")
-            return
-        except Exception as e:
-            logging.error("An unknown error occurred")
-            return
-        
-        compute_and_set_angles(members, nodes)
-        # Comment the line below out to keep the dimensions extracted from the SHAPE_LABEL only
-        set_member_dimensions(members, shapes)
-        get_views(members, nodes)
-        
-        if dim_var.get() == '3D':
-            gen_view(members, nodes, filename, '3D', options)
-        elif dim_var.get() == 'Both':
-            gen_view(members, nodes, filename, '3D', options)
-            if side.get() == 1:
-                gen_view(members, nodes, filename, 'side1', options)
-                gen_view(members, nodes, filename, 'side2', options)
-            if top.get() == 1:
-                gen_view(members, nodes, filename, 'top' , options)
-            if bottom.get() == 1:
-                gen_view(members, nodes, filename, 'bottom', options)
-        elif dim_var.get() == '2D':
-            if side.get() == 1:
-                gen_view(members, nodes, filename, 'side1', options)
-                gen_view(members, nodes, filename, 'side2', options)
-            if top.get() == 1:
-                gen_view(members, nodes, filename, 'top' , options)
-            if bottom.get() == 1:
-                gen_view(members, nodes, filename, 'bottom', options)
-        logging.info("file converted!")
 
-    elif ".3dd" in full_filename:
-        filename = full_filename.strip('.3dd')
-    else:
-        # Invalid filetype,  give an error message here.
-        logging.error("invalid file type")
-        return
+        filename = filepath.split('/')[-1]
+        if ".r3d" in filename:
+            filename = filename.strip('.r3d')
+            nodes = []
+            members = []
+            try:
+                with open(filepath, 'r') as file:
+                    for line in file:
+                        for heading in HEADINGS:
+                            if heading in line and "END" not in line:
+                                line = line.strip()
+                                num_entries = int(line.split('<')[-1].strip('>'))
+                                data = []
+                                match heading:
+                                    case 'UNITS':
+                                        for i in range(num_entries):
+                                            data.append(file.readline().strip())
+                                        units = get_units(data)
+                                    case 'NODES':
+                                        for i in range(num_entries):
+                                            data.append(file.readline().strip())
+                                        nodes = get_nodes(data)
+                                    case '.MEMBERS_MAIN_DATA':
+                                        for i in range(num_entries):
+                                            data.append(file.readline())
+                                        members = get_members(data)
+                                    case 'SHAPES_LIST':
+                                        for i in range(num_entries):
+                                            data.append(file.readline())
+                                        shapes = get_shapes_list(data)
+            except FileNotFoundError:
+                logging.error("File not found")
+                return
+            except PermissionError:
+                logging.error("Permission denied, could not read file")
+                return
+            except Exception as e:
+                logging.error("An unknown error occurred")
+                return
+            
+            compute_and_set_angles(members, nodes)
+            # Comment the line below out to keep the dimensions extracted from the SHAPE_LABEL only
+            set_member_dimensions(members, shapes)
+            get_views(members, nodes)
+            
+            if dim_var.get() == '3D':
+                gen_view(members, nodes, filename, '3D', options)
+            elif dim_var.get() == 'Both':
+                gen_view(members, nodes, filename, '3D', options)
+                if side.get() == 1:
+                    gen_view(members, nodes, filename, 'side1', options)
+                    gen_view(members, nodes, filename, 'side2', options)
+                if top.get() == 1:
+                    gen_view(members, nodes, filename, 'top' , options)
+                if bottom.get() == 1:
+                    gen_view(members, nodes, filename, 'bottom', options)
+            elif dim_var.get() == '2D':
+                if side.get() == 1:
+                    gen_view(members, nodes, filename, 'side1', options)
+                    gen_view(members, nodes, filename, 'side2', options)
+                if top.get() == 1:
+                    gen_view(members, nodes, filename, 'top' , options)
+                if bottom.get() == 1:
+                    gen_view(members, nodes, filename, 'bottom', options)
+            logging.info("file converted!")
 
-def on_select(file,file_label):
-    selected_file = filedialog.askopenfilename(
-        filetypes=[("RISA/Modelsmart Files", "*.3dd *.r3d"), ("All Files", "*.*")]
-    )
-    if selected_file:
-        file.set(selected_file)
-        file_label.config(text=selected_file)        
+        elif ".3dd" in full_filename:
+            filename = full_filename.strip('.3dd')
+        else:
+            # Invalid filetype,  give an error message here.
+            logging.error("invalid file type")
+    return
+
+
 
 
 
 def main()->None:
-
     logging.info("Starting RISA-3D to OBJ Converter")
+    
+    # Select/return filepath(s). Also updates the label displayed next to the "Select" button in the GUI.
+    def on_select(file,file_label):
+        selected_file = filedialog.askopenfilename(
+            multiple=TRUE,    # Set to read-only mode.
+            filetypes=[("RISA/Modelsmart Files", "*.3dd *.r3d"), ("All Files", "*.*")]
+        )
+        if selected_file:
+            if len(selected_file) > 1:
+                file_list = []
+                file_string = ''
+                for i in selected_file:
+                    file_list.append(i)
+                    file_string += i
+                    if i != selected_file[len(selected_file) - 1]:
+                        file_string += '\n'
+                file_label.config(text=file_string)
+            else:
+                file_list = selected_file[0]
+                file_label.config(text=selected_file[0])
+            file.set(file_list)
+
     # Advanced settings sub-page is in a callable function that is called when the user clicks on the "Advanced" button.
     def Advanced_Settings():
         advanced = Toplevel(root)
@@ -645,13 +662,14 @@ def main()->None:
     root.columnconfigure(0, weight=1)
     root.rowconfigure(0, weight=1)
 
-    file = StringVar()
+    file = StringVar(value=[])
     dim_var = StringVar(value='Both')
     side = IntVar(value=1)
     top = IntVar(value=1)
     bottom = IntVar(value=1)
     cyl_vert = StringVar(value="16")
     coord_prec = StringVar(value="3")
+    curr_dir = StringVar(value=os.getcwd())
 
     ttk.Label(mainframe, text="UAA 3D File Conversion Tool", font=("Arial", 15)).grid(column=0, row=0, padx=(25,25), pady=(5,10))
     file_frame = ttk.Frame(mainframe)
