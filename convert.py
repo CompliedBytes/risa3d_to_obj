@@ -546,7 +546,7 @@ def convert(file_list, dim_var, side, top, bottom, cyl_vert, coord_prec):
             
             if dim_var.get() == '3D':
                 gen_view(members, nodes, filename, '3D', options)
-            elif dim_var.get() == 'Both':
+            elif dim_var.get() == 'All':
                 gen_view(members, nodes, filename, '3D', options)
                 if side.get() == 1:
                     gen_view(members, nodes, filename, 'side1', options)
@@ -642,35 +642,32 @@ def main()->None:
         cyl_options_field = ttk.Entry(advframe, textvariable=cyl_vert, justify=LEFT)
         cyl_options_label.grid(column=0, row=3, padx=(10,0), pady=(10,0))
         cyl_options_field.grid(column=0, row=4, padx=(10,0), pady=(10,10))
-        ToolTip(cyl_options_label, msg="Number of side faces for generated cylinders.\nThe more faces, the closer they will be to an actual cylinder.\n16 is recommended.", delay=0.25)
+        ToolTip(cyl_options_label, msg="Number of side faces for generated cylinders.\nThe more faces, the closer they will be to an actual cylinder.\nDefault is 16.", delay=0.25)
 
         # Coordinate Precision Section.
         prec_options_label = ttk.Label(advframe, text='Coordinate Precision', foreground="black")
         prec_options_field = ttk.Entry(advframe, textvariable=coord_prec, justify=LEFT)
         prec_options_label.grid(column=0, row=5, padx=(10,0), pady=(10,0))
         prec_options_field.grid(column=0, row=6, padx=(10,0), pady=(10,10))
-        ToolTip(prec_options_label, msg="Number of decimal places to round to.\n3 (thousandths) is default.", delay=0.25)
+        ToolTip(prec_options_label, msg="Number of decimal places to round to.\nDefault is 3 (thousandths).", delay=0.25)
 
         exit_button = ttk.Button(advframe, text="Exit", command=lambda: advanced.destroy())
         exit_button.grid(column=0, row=10, sticky=E)
         advanced.mainloop()
     
-
     root = Tk()
     root.title("RISA-3D to OBJ Converter")
     style = ttk.Style(root)
     style.configure('UFrame', background=BACKGROUND_COLOR, foreground='black')
     style.configure('TFrame', background=BACKGROUND_COLOR, foreground='black')
     style.configure('TLabel', background=BACKGROUND_COLOR, foreground='black')
-    style.configure('TCheckbutton', background=BACKGROUND_COLOR)
-
     mainframe = ttk.Frame(root, padding="3 3 12 12")
     mainframe.grid(column=0, row=0, sticky=(N, W, E, S))
     root.columnconfigure(0, weight=1)
     root.rowconfigure(0, weight=1)
 
     file = StringVar(value=[])
-    dim_var = StringVar(value='Both')
+    dim_var = StringVar(value='All')
     side = IntVar(value=1)
     top = IntVar(value=1)
     bottom = IntVar(value=1)
@@ -678,11 +675,10 @@ def main()->None:
     coord_prec = StringVar(value="3")
     dest_dir = StringVar(value=os.getcwd())
 
-    ttk.Label(mainframe, text="UAA 3D File Conversion Tool", font=("Arial", 15)).grid(column=0, row=0, padx=(25,25), pady=(5,10))
-    
+    main_title = ttk.Label(mainframe, text="UAA 3D File Conversion Tool", font=("Arial", 15))
+    main_title.grid(column=0, row=0, padx=(25,25), pady=(5,10))
     
     file_title = ttk.Label(mainframe, text="Select Source File(s)", font=("Arial", 10))
-    
     file_frame = ttk.Frame(mainframe)
     file_button = ttk.Button(file_frame, text="Select File", command=lambda: file_select(file,file_label))
     file_label = ttk.Label(file_frame, text="                                                         ", background="white", relief='sunken')
@@ -705,14 +701,12 @@ def main()->None:
     dim_frame = ttk.Frame(mainframe)
     dim_label = ttk.Label(dim_frame, text="2D/3D Views:", foreground="black")
     dim_box = ttk.Combobox(dim_frame, textvariable=dim_var)   
-    dim_box['values'] = ('2D', '3D','Both')
+    dim_box['values'] = ('2D', '3D','All')
     dim_box.state(["readonly"])
-    dim_box.set('Both')
     dim_label.grid(column=0, row=0, padx=(0,5), pady=(0,0))
     dim_box.grid(column=1, row=0, padx=(5,0), pady=(0,0))
     dim_frame.grid(column=0, row=5, padx=(0,0), pady=(10,10))
-    ToolTip(dim_label, msg="Select whether you'd like 2D views, 3D views, or both types of views.\nAdditional 2D options are available in the Advanced menu.", delay=0.25)
-
+    ToolTip(dim_label, msg="Choose between only 2D views, only 3D views, or all views.\nAdditional 2D options are available in the Advanced menu.", delay=0.25)
 
     bottom_frame = ttk.Frame(mainframe)
     advanced_button = ttk.Button(bottom_frame, text="Advanced", command = lambda: Advanced_Settings())
