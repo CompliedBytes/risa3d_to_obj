@@ -410,7 +410,7 @@ def gen_circ_face_vertices(member, nodes, options):
     half_width_vect = v1 * member.radius/2
     half_height_vect = v2 * member.radius/2
    
-    circle_size = int(options["cyl"])
+    circle_size = int(options["Cyl"])
     arc_deg = 2*np.pi/circle_size
 
     corners = []
@@ -451,15 +451,54 @@ def gen_circ_face_vertices(member, nodes, options):
 
     return np.array(corners), faces
 
-def print_prism_obj(verticies, faces, filename):
-    logging.info(f"Writing {filename}.obj")
-    obj_file = open(filename + ".obj", "w")
+def create_folder(dest_dir, filename, subs_flag):
+    new_folder = dest_dir + '\\' + filename
 
-    for i, vertex in enumerate(verticies, start=1):
-        obj_file.write(f"v {vertex[0]} {vertex[1]} {vertex[2]}\n")
+    logging.info(f"Verifying {dest_dir} exists...")
+    if os.path.exists(dest_dir):
+        logging.info(f"{dest_dir} is exists. Checking writability...")
+        if os.access(dest_dir, os.W_OK):
+            logging.info(f"{dest_dir} is writable.")
+            if subs_flag and not os.path.exists(new_folder):
+                logging.info(f"Creating subfolder {new_folder}...")
+                if not os.path.exists(new_folder):
+                    os.mkdir(new_folder)
+                    if os.path.exists(new_folder):
+                        logging.info(f"{new_folder} successfully created.")
+                        return new_folder
+                    else:
+                        logging.error(f"Subfolder creation failed.")
+                        logging.error(f"Reverting to {dest_dir}.")
+                        return os.getcwd()
+            elif subs_flag:
+                return new_folder
+            else:
+                return dest_dir
+        else:
+            logging.error(f"{dest_dir} is not writable. Reverting back to current working directory.")
+            return os.getcwd()
+    else:
+        logging.error(f"{dest_dir} does not exist. Reverting back to current working directory.")
+        return os.getcwd()
 
-    for face in faces:
-        obj_file.write(f"f {' '.join(map(str, face))}\n")
+def print_prism_obj(generated_views, srcfilename, options):
+    folder = create_folder(options["Dest"], srcfilename, options["Subs"])
+    for view in generated_views:
+        vertices = view[0]
+        faces = view[1]
+        filename = view[2]
+        print(filename)
+        logging.info(f"Writing {filename}.obj")
+        obj_file = open(folder + "\\" + filename + ".obj", "w")
+
+        for vertex in vertices:
+            obj_file.write(f"v {vertex[0]} {vertex[1]} {vertex[2]}\n")
+        for face in faces:
+            obj_file.write(f"f {' '.join(map(str, face))}\n")
+    else:
+        logging.error(f"Cannot write to or create the destination folder and cannot write to the current working directory.")
+        logging.error(f"File creation unsuccessful.")
+        return
 
 def gen_view(members, nodes, filename, view, options):
     logging.info(f"Generating {view} view")
@@ -481,9 +520,9 @@ def gen_view(members, nodes, filename, view, options):
     if len(all_vertices) == 0:
         logging.error("No members found for gen_view")
         return "no members found"
-    print_prism_obj(np.round(all_vertices, decimals=int(options["prec"])), all_faces, filename + '_' + view)
+    return np.round(all_vertices, decimals=int(options["Prec"])), all_faces, filename + '_' + view
 
-def convert(file_list, dim_var, side, top, bottom, cyl_vert, coord_prec):
+def convert(file_list, dest_dir, dim_var, side, top, bottom, cyl_vert, coord_prec):
     file_list = file_list.get().split('\'')
     files = []
     for i in file_list:
@@ -493,7 +532,7 @@ def convert(file_list, dim_var, side, top, bottom, cyl_vert, coord_prec):
     for filepath in files:
         logging.info("Conveting file: " + filepath)
 
-        options = {"D" : dim_var.get(), "cyl": cyl_vert.get(), "prec": coord_prec.get()}
+        options = {"Dest": dest_dir.get(), "Dim": dim_var.get(), "Cyl": cyl_vert.get(), "Prec": coord_prec.get(), "Subs": True}
 
         if not os.path.exists(filepath):
             logging.error("File not found")
@@ -543,28 +582,31 @@ def convert(file_list, dim_var, side, top, bottom, cyl_vert, coord_prec):
             # Comment the line below out to keep the dimensions extracted from the SHAPE_LABEL only
             set_member_dimensions(members, shapes)
             get_views(members, nodes)
-            
+            generated_views = []
             if dim_var.get() == '3D':
-                gen_view(members, nodes, filename, '3D', options)
+                generated_views.append(gen_view(members, nodes, filename, '3D', options))
             elif dim_var.get() == 'All':
-                gen_view(members, nodes, filename, '3D', options)
-                if side.get() == 1:
-                    gen_view(members, nodes, filename, 'side1', options)
-                    gen_view(members, nodes, filename, 'side2', options)
-                if top.get() == 1:
-                    gen_view(members, nodes, filename, 'top' , options)
-                if bottom.get() == 1:
-                    gen_view(members, nodes, filename, 'bottom', options)
+                generated_views.append(gen_view(members, nodes, filename, '3D', options))
+                if side.get():
+                    generated_views.append(gen_view(members, nodes, filename, 'side1', options))
+                    generated_views.append(gen_view(members, nodes, filename, 'side2', options))
+                if top.get():
+                    generated_views.append(gen_view(members, nodes, filename, 'top', options))
+                if bottom.get():
+                    generated_views.append(gen_view(members, nodes, filename, 'bottom', options))
             elif dim_var.get() == '2D':
-                if side.get() == 1:
-                    gen_view(members, nodes, filename, 'side1', options)
-                    gen_view(members, nodes, filename, 'side2', options)
-                if top.get() == 1:
-                    gen_view(members, nodes, filename, 'top' , options)
-                if bottom.get() == 1:
-                    gen_view(members, nodes, filename, 'bottom', options)
-            logging.info("file converted!")
-
+                if side.get():
+                    generated_views.append(gen_view(members, nodes, filename, 'side1', options))
+                    generated_views.append(gen_view(members, nodes, filename, 'side2', options))
+                if top.get():
+                    generated_views.append(gen_view(members, nodes, filename, 'top' , options))
+                if bottom.get():
+                    generated_views.append(gen_view(members, nodes, filename, 'bottom', options))
+            logging.info("File successfully converted")
+            logging.info("Starting write process...")
+            
+            print_prism_obj(generated_views, filename, options)
+    
         elif ".3dd" in filename:
             filename = filename.strip('.3dd')
         else:
@@ -629,9 +671,9 @@ def main()->None:
         dim_options_label.grid(column=0, row=1, padx=(0,0), pady=(10,0))
         ToolTip(dim_options_label, msg="Specify which 2D views you'd like generated.\nDefault is all of them.", delay=0.25)
         dim_options_frame = ttk.Frame(advframe)
-        side_button = ttk.Checkbutton(dim_options_frame, text="Side", variable=side, onvalue=1, offvalue=0)
-        top_button = ttk.Checkbutton(dim_options_frame, text="Top", variable=top, onvalue=1, offvalue=0)
-        bottom_button = ttk.Checkbutton(dim_options_frame, text="Bottom", variable=bottom, onvalue=1, offvalue=0)
+        side_button = ttk.Checkbutton(dim_options_frame, text="Side", variable=side, onvalue=True, offvalue=False)
+        top_button = ttk.Checkbutton(dim_options_frame, text="Top", variable=top, onvalue=True, offvalue=False)
+        bottom_button = ttk.Checkbutton(dim_options_frame, text="Bottom", variable=bottom, onvalue=True, offvalue=False)
         side_button.grid(column=0, row=0, padx=(0,10))
         top_button.grid(column=1, row=0, padx=(10,10))
         bottom_button.grid(column=2, row=0, padx=(10,0))
@@ -668,9 +710,9 @@ def main()->None:
 
     file = StringVar(value=[])
     dim_var = StringVar(value='All')
-    side = IntVar(value=1)
-    top = IntVar(value=1)
-    bottom = IntVar(value=1)
+    side = BooleanVar(value=True)
+    top = BooleanVar(value=True)
+    bottom = BooleanVar(value=True)
     cyl_vert = StringVar(value="16")
     coord_prec = StringVar(value="3")
     dest_dir = StringVar(value=os.getcwd())
@@ -710,7 +752,7 @@ def main()->None:
 
     bottom_frame = ttk.Frame(mainframe)
     advanced_button = ttk.Button(bottom_frame, text="Advanced", command = lambda: Advanced_Settings())
-    convert_button = ttk.Button(bottom_frame, text="Convert", command =lambda: convert(file, dim_var, side, top, bottom, cyl_vert, coord_prec))
+    convert_button = ttk.Button(bottom_frame, text="Convert", command =lambda: convert(file, dest_dir, dim_var, side, top, bottom, cyl_vert, coord_prec))
     exit_button = ttk.Button(bottom_frame, text="Exit", command=root.destroy)
     advanced_button.grid(column=0, row=0, padx=(0,20), pady=(0,0))
     convert_button.grid(column=1, row=0, padx=(20,20), pady=(0,0))
