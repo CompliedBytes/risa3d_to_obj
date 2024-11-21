@@ -289,25 +289,41 @@ def get_views(members, nodes):
         if i_node.z == ext_coords[5] and j_node.z == ext_coords[5]:
             member.views.append('side2')
 
-def get_ortho_vectors(vector: np.array) -> tuple[np.array, np.array]:
-    #Check that array is the right size
+def get_orthogonal_vectors(vector: np.array) -> tuple[np.array, np.array]:
+    """
+    This function takes a vector and returns two orthogonal vectors to it.
+
+    Parameters
+    ----------
+    vector : np.array
+        The input vector to find orthogonal vectors for.
+    
+    Returns
+    -------
+    tuple[np.array, np.array]
+        A tuple containing the two orthogonal vectors to the input vector.
+    """
+    if vector.shape != (1, 3):
+        logging.error("Vector must be a 3D column vector.")
+        return np.array([0, 0, 0]), np.array([0, 0, 0])
+
 
     norm = np.linalg.norm(vector)
     if norm == 0:
         logging.error("Zero division error input has no magnitude")
 
-    i_norm = vector / norm
+    unit_norm = vector / norm
     
-    if np.allclose(i_norm, [1, 0, 0]) or np.allclose(i_norm, [-1, 0, 0]):
+    if np.allclose(unit_norm, [1, 0, 0]) or np.allclose(unit_norm, [-1, 0, 0]):
         temp_vector = np.array([0, 1, 0])  # Use y-axis if aligned with x-axis
-    elif np.allclose(i_norm, [0, 1, 0]) or np.allclose(i_norm, [0, -1, 0]):
+    elif np.allclose(unit_norm, [0, 1, 0]) or np.allclose(unit_norm, [0, -1, 0]):
         temp_vector = np.array([0, 0, 1])  # Use z-axis if aligned with y-axis
     else:
         temp_vector = np.array([1, 0, 0])  # Default to x-axis otherwise
 
-    v1 = np.cross(i_norm, temp_vector)
+    v1 = np.cross(unit_norm, temp_vector)
     v1 = v1 / np.linalg.norm(v1)
-    v2 = np.cross(i_norm, v1)
+    v2 = np.cross(unit_norm, v1)
     v2 = v2 / np.linalg.norm(v2)
 
     return v1, v2
@@ -344,7 +360,7 @@ def gen_rect_face_vertices(member: Member, nodes: list[Node], options) -> tuple[
         return [], []
     dir_vec = dir_vec / np.linalg.norm(dir_vec)
 
-    v1,v2 = get_ortho_vectors(dir_vec)
+    v1,v2 = get_orthogonal_vectors(dir_vec)
 
     if member.rotation != 0:
         rot_matrix = rotate_vector(dir_vec, member.rotation)  # Rotate around the member's axis
@@ -387,7 +403,7 @@ def gen_circ_face_vertices(member, nodes, options):
     i_vec = np.array([i_node.x, i_node.y, i_node.z])
     j_vec = np.array([j_node.x, j_node.y, j_node.z])
     
-    v1, v2 = get_ortho_vectors(dir_vec)
+    v1, v2 = get_orthogonal_vectors(dir_vec)
     half_width_vect = v1 * member.radius/2
     half_height_vect = v2 * member.radius/2
    
