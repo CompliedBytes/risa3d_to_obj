@@ -63,6 +63,9 @@ class Node:
     y: float
     z: float
 
+    def get_coordinates(self) -> list[float]:
+        return [self.x, self.y, self.z]
+
 @dataclass
 class Shape:
     name: str
@@ -104,15 +107,11 @@ class Member:
             logging.error(f"Dimesions not found for member: {self.label}, shape: {self.shape_label}")
     
     def get_i_coordinates(self,nodes) -> list[float]:
-        x = nodes[self.inode-1].x
-        y = nodes[self.inode-1].y
-        z = nodes[self.inode-1].z
+        x,y,z = nodes[self.inode-1].get_coordinates()
         return [x,y,z]
     
     def get_j_coordinates(self,nodes) -> list[float]:
-        x = nodes[self.jnode-1].x
-        y = nodes[self.jnode-1].y
-        z = nodes[self.jnode-1].z
+        x,y,z = nodes[self.jnode-1].get_coordinates()
         return [x,y,z]
 
 # Constants
@@ -310,24 +309,24 @@ def get_plane_angle(vector: np.array, normal: np.array) -> float:
 
     return theta_plane
 
-# This function takes in a member and the set of nodes
+# This function takes in a member and a set of nodes
 # Then it will compute the angles made with each axis (yz,xz,xy)
-# It will update the member object with the new angles found
-def compute_and_set_angles(members: list[Member], nodes: list[Node]) -> None:
-    for member in members:
-        # Creates a vector from the i and j nodes of the member
-        i_node = nodes[member.inode-1]
-        j_node = nodes[member.jnode-1]
-        member_vect = np.array([[j_node.x - i_node.x],[j_node.y - i_node.y],[j_node.z - i_node.z]])
-        
-        yz_normal = np.array([1,0,0])
-        xz_normal = np.array([0,1,0])
-        xy_normal = np.array([0,0,1])
+# It will return these angles in degrees that the member makes with each axis
+def compute_axis_angles(member: Member, nodes: list[Node]) -> tuple[float, float, float]:
+    # Creates a vector from the i and j nodes of the member
+    i_node = nodes[member.inode-1]
+    j_node = nodes[member.jnode-1]
+    member_vect = np.array([[j_node.x - i_node.x],[j_node.y - i_node.y],[j_node.z - i_node.z]])
 
-        #The .item() here is used to convert from numpy flot to python flot
-        member.theta_yz = get_plane_angle(member_vect, yz_normal).item()
-        member.theta_xz = get_plane_angle(member_vect, xz_normal).item()
-        member.theta_xy = get_plane_angle(member_vect, xy_normal).item()
+    yz_normal = np.array([1,0,0])
+    xz_normal = np.array([0,1,0])
+    xy_normal = np.array([0,0,1])
+
+    theta_yz = get_plane_angle(member_vect, yz_normal).item()
+    theta_xz = get_plane_angle(member_vect, xz_normal).item()
+    theta_xy = get_plane_angle(member_vect, xy_normal).item()
+
+    return theta_yz, theta_xz, theta_xy
 
 def get_memberID_by_name(nodeLabel: str, memberList: list[Member]) -> int:
     for idx in range(memberList.__len__()):
@@ -378,19 +377,20 @@ def rotate_vector(axis: np.array, angle: float) -> np.array:
 
     return rot
 
-def gen_rect_face_vertices(member: list[Member], nodes: list[Node], options) -> tuple[np.array, list[list[int]]]:
-    i_node = nodes[member.inode-1]
-    j_node = nodes[member.jnode-1]
+def gen_rect_face_vertices(member: Member, nodes: list[Node], options) -> tuple[np.array, list[list[int]]]:
+    ix,iy,iz = member.get_i_coordinates(nodes)
+    jx,jy,jz = member.get_j_coordinates(nodes)
+    i_vec = np.array([ix,iy,iz])
+    j_vec = np.array([jx,jy,jz])
 
-    dir_vec = np.array([j_node.x - i_node.x, j_node.y - i_node.y, j_node.z - i_node.z])
+    dir_vec = j_vec - i_vec
+
+    # Normalize the direction vector, if it is zero, return an empty list
     if np.linalg.norm(dir_vec) == 0:
         logging.error(f"Member {member.label} has zero length.")
         return [], []
     dir_vec = dir_vec / np.linalg.norm(dir_vec)
 
-    i_vec = np.array([i_node.x, i_node.y, i_node.z])
-    j_vec = np.array([j_node.x, j_node.y, j_node.z])
-    
     v1,v2 = get_ortho_vectors(dir_vec)
 
     if member.rotation != 0:
@@ -401,18 +401,18 @@ def gen_rect_face_vertices(member: list[Member], nodes: list[Node], options) -> 
     half_width_vec = member.width / 2 * v1
     half_height_vec = member.height / 2 * v2
 
-    corners = []
-
     # Create the four corners of the face
-    corners.append(i_vec + half_width_vec + half_height_vec)
-    corners.append(i_vec - half_width_vec + half_height_vec)
-    corners.append(i_vec - half_width_vec - half_height_vec)
-    corners.append(i_vec + half_width_vec - half_height_vec) 
+    corners = [
+        i_vec + half_width_vec + half_height_vec,
+        i_vec - half_width_vec + half_height_vec,
+        i_vec - half_width_vec - half_height_vec,
+        i_vec + half_width_vec - half_height_vec,
 
-    corners.append(j_vec + half_width_vec + half_height_vec)
-    corners.append(j_vec - half_width_vec + half_height_vec)
-    corners.append(j_vec - half_width_vec - half_height_vec)
-    corners.append(j_vec + half_width_vec - half_height_vec)
+        j_vec + half_width_vec + half_height_vec,
+        j_vec - half_width_vec + half_height_vec,
+        j_vec - half_width_vec - half_height_vec,
+        j_vec + half_width_vec - half_height_vec
+    ]
 
     faces = [
             [1, 2, 3, 4],  # Bottom face
@@ -423,7 +423,7 @@ def gen_rect_face_vertices(member: list[Member], nodes: list[Node], options) -> 
             [4, 1, 5, 8]   # Side face
         ]
 
-    return np.array(corners), faces
+    return corners, faces
 
 def gen_circ_face_vertices(member, nodes, options):
     i_node = nodes[member.inode-1]
@@ -477,7 +477,7 @@ def gen_circ_face_vertices(member, nodes, options):
         else:
             faces.append([i-circle_size, i, i+1])
 
-    return np.array(corners), faces
+    return corners, faces
 
 def create_folder(dest_dir, filename, subs_flag):
     new_folder = dest_dir + '\\' + filename
@@ -610,7 +610,13 @@ def convert(file_list, dest_dir, dim_var, side, top, bottom, cyl_vert, coord_pre
                 logging.error("An unknown error occurred")
                 return
             
-            compute_and_set_angles(members, nodes)
+            #unused code for now?
+            #for member in members:
+            #    theta_yz, theta_xz, theta_xy = compute_axis_angles(member, nodes)
+            #    member.theta_yz = theta_yz
+            #    member.theta_xz = theta_xz
+            #    member.theta_xy = theta_xy
+
             # Comment the line below out to keep the dimensions extracted from the SHAPE_LABEL only
             set_member_dimensions(members, shapes)
             get_views(members, nodes)
