@@ -360,16 +360,44 @@ def get_ortho_vectors(vector: np.array) -> tuple[np.array, np.array]:
 
     return v1, v2
 
+def rotate_vector(axis: np.array, angle: float) -> np.array:
+    """
+    This function uses Rodrigues' Rotation Formula to rotate a vector about an axis by a given angle.
+    """
+    angle = np.radians(angle)
+    cos_theta = np.cos(angle)
+    sin_theta = np.sin(angle)
+    one_minus_cos = 1 - cos_theta
+
+    x, y, z = axis  # Components of the normalized rotation axis
+    rot = np.array([
+        [cos_theta + x * x * one_minus_cos, x * y * one_minus_cos - z * sin_theta, x * z * one_minus_cos + y * sin_theta],
+        [y * x * one_minus_cos + z * sin_theta, cos_theta + y * y * one_minus_cos, y * z * one_minus_cos - x * sin_theta],
+        [z * x * one_minus_cos - y * sin_theta, z * y * one_minus_cos + x * sin_theta, cos_theta + z * z * one_minus_cos]
+    ])
+
+    return rot
+
 def gen_rect_face_vertices(member: list[Member], nodes: list[Node], options) -> tuple[np.array, list[list[int]]]:
     i_node = nodes[member.inode-1]
     j_node = nodes[member.jnode-1]
 
     dir_vec = np.array([j_node.x - i_node.x, j_node.y - i_node.y, j_node.z - i_node.z])
+    if np.linalg.norm(dir_vec) == 0:
+        logging.error(f"Member {member.label} has zero length.")
+        return [], []
+    dir_vec = dir_vec / np.linalg.norm(dir_vec)
 
     i_vec = np.array([i_node.x, i_node.y, i_node.z])
     j_vec = np.array([j_node.x, j_node.y, j_node.z])
     
     v1,v2 = get_ortho_vectors(dir_vec)
+
+    if member.rotation != 0:
+        rot_matrix = rotate_vector(dir_vec, member.rotation)  # Rotate around the member's axis
+        v1 = np.dot(rot_matrix, v1)
+        v2 = np.dot(rot_matrix, v2)
+
     half_width_vec = member.width / 2 * v1
     half_height_vec = member.height / 2 * v2
 
