@@ -303,7 +303,7 @@ def get_orthogonal_vectors(vector: np.array) -> tuple[np.array, np.array]:
     tuple[np.array, np.array]
         A tuple containing the two orthogonal vectors to the input vector.
     """
-    if vector.shape != (1, 3):
+    if vector.ndim != 1 or vector.shape[0] != 3:
         logging.error("Vector must be a 3D column vector.")
         return np.array([0, 0, 0]), np.array([0, 0, 0])
 
