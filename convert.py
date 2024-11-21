@@ -484,21 +484,24 @@ def create_folder(dest_dir, filename, subs_flag):
 def print_prism_obj(generated_views, srcfilename, options):
     folder = create_folder(options["Dest"], srcfilename, options["Subs"])
     for view in generated_views:
-        vertices = view[0]
-        faces = view[1]
-        filename = view[2]
-        print(filename)
-        logging.info(f"Writing {filename}.obj")
-        obj_file = open(folder + "\\" + filename + ".obj", "w")
-
-        for vertex in vertices:
-            obj_file.write(f"v {vertex[0]} {vertex[1]} {vertex[2]}\n")
-        for face in faces:
-            obj_file.write(f"f {' '.join(map(str, face))}\n")
-    else:
-        logging.error(f"Cannot write to or create the destination folder and cannot write to the current working directory.")
-        logging.error(f"File creation unsuccessful.")
-        return
+        if len(view) > 2:
+            vertices = view[0]
+            faces = view[1]
+            filename = view[2]
+            print(filename)
+            logging.info(f"Writing {filename}.obj")
+            obj_file = open(folder + "\\" + filename + ".obj", "w")
+            for vertex in vertices:
+                obj_file.write(f"v {vertex[0]} {vertex[1]} {vertex[2]}\n")
+            for face in faces:
+                obj_file.write(f"f {' '.join(map(str, face))}\n")
+            
+            if os.path.exists(folder + "\\" + filename + ".obj"):
+                logging.info(f"File {filename} successfully created.")
+            else:
+                logging.error(f"Error creating {filename}.")
+        else:
+            logging.error(f"{view[0]}{view[1]}.")
 
 def gen_view(members, nodes, filename, view, options):
     logging.info(f"Generating {view} view")
@@ -519,7 +522,8 @@ def gen_view(members, nodes, filename, view, options):
             vertex_count += corners.__len__()
     if len(all_vertices) == 0:
         logging.error("No members found for gen_view")
-        return "no members found"
+        return_arr = ["No members found for ", filename + '_' + view]
+        return return_arr
     return np.round(all_vertices, decimals=int(options["Prec"])), all_faces, filename + '_' + view
 
 def convert(file_list, dest_dir, dim_var, side, top, bottom, cyl_vert, coord_prec):
@@ -602,6 +606,7 @@ def convert(file_list, dest_dir, dim_var, side, top, bottom, cyl_vert, coord_pre
                     generated_views.append(gen_view(members, nodes, filename, 'top' , options))
                 if bottom.get():
                     generated_views.append(gen_view(members, nodes, filename, 'bottom', options))
+
             logging.info("File successfully converted")
             logging.info("Starting write process...")
             
