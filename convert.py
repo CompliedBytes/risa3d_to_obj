@@ -104,7 +104,7 @@ class Member:
             self.width = float(clean_dimension_input(dimensions[1]))
             self.thickness = float(clean_dimension_input(dimensions[2]))
         else:
-            logging.error(f"Dimesions not found for member: {self.label}, shape: {self.shape_label}")
+            logging.warning(f"Dimesions not found for member: {self.label}, shape: {self.shape_label}")
     
     def get_i_coordinates(self,nodes) -> list[float]:
         x,y,z = nodes[self.inode-1].get_coordinates()
@@ -288,53 +288,6 @@ def get_views(members, nodes):
             member.views.append('side1')
         if i_node.z == ext_coords[5] and j_node.z == ext_coords[5]:
             member.views.append('side2')
-
-# This function takes in a vector and a plane normal
-# Then it finds the angle the vector makes with that plane and returns it in degrees
-def get_plane_angle(vector: np.array, normal: np.array) -> float:
-    #check vector and normal are the right size
-
-    flat = vector.flatten()
-    dot = np.dot(flat,normal)
-
-    vect_mag = np.linalg.norm(flat)
-    norm_mag = np.linalg.norm(normal)
-
-    if vect_mag == 0 or norm_mag == 0:
-        logging.error("Zero division error input has no magnitude")
-    cos_theta = dot / (vect_mag*norm_mag)
-
-    theta_rad = np.arccos(cos_theta)
-    theta_plane = 90 - np.degrees(theta_rad)
-
-    return theta_plane
-
-# This function takes in a member and a set of nodes
-# Then it will compute the angles made with each axis (yz,xz,xy)
-# It will return these angles in degrees that the member makes with each axis
-def compute_axis_angles(member: Member, nodes: list[Node]) -> tuple[float, float, float]:
-    # Creates a vector from the i and j nodes of the member
-    i_node = nodes[member.inode-1]
-    j_node = nodes[member.jnode-1]
-    member_vect = np.array([[j_node.x - i_node.x],[j_node.y - i_node.y],[j_node.z - i_node.z]])
-
-    yz_normal = np.array([1,0,0])
-    xz_normal = np.array([0,1,0])
-    xy_normal = np.array([0,0,1])
-
-    theta_yz = get_plane_angle(member_vect, yz_normal).item()
-    theta_xz = get_plane_angle(member_vect, xz_normal).item()
-    theta_xy = get_plane_angle(member_vect, xy_normal).item()
-
-    return theta_yz, theta_xz, theta_xy
-
-def get_memberID_by_name(nodeLabel: str, memberList: list[Member]) -> int:
-    for idx in range(memberList.__len__()):
-        member = memberList[idx]
-        if member.label == nodeLabel:
-            return idx
-    logging.warning(f"Member not found: {nodeLabel}")
-    return -1
 
 def get_ortho_vectors(vector: np.array) -> tuple[np.array, np.array]:
     #Check that array is the right size
@@ -609,15 +562,7 @@ def convert(file_list, dest_dir, dim_var, side, top, bottom, cyl_vert, coord_pre
             except Exception as e:
                 logging.error("An unknown error occurred")
                 return
-            
-            #unused code for now?
-            #for member in members:
-            #    theta_yz, theta_xz, theta_xy = compute_axis_angles(member, nodes)
-            #    member.theta_yz = theta_yz
-            #    member.theta_xz = theta_xz
-            #    member.theta_xy = theta_xy
 
-            # Comment the line below out to keep the dimensions extracted from the SHAPE_LABEL only
             set_member_dimensions(members, shapes)
             get_views(members, nodes)
             generated_views = []
@@ -649,7 +594,6 @@ def convert(file_list, dest_dir, dim_var, side, top, bottom, cyl_vert, coord_pre
         elif ".3dd" in filename:
             filename = filename.strip('.3dd')
         else:
-            # Invalid filetype,  give an error message here.
             logging.error("invalid file type")
     return
 
