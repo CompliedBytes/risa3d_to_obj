@@ -509,7 +509,7 @@ def create_folder(dest_dir, filename, subs_flag):
         logging.error(f"{dest_dir} does not exist. Reverting back to current working directory.")
         return os.getcwd()
 
-def print_prism_obj(generated_views, srcfilename, options):
+def export_views_to_obj(generated_views, srcfilename, options):
     folder = create_folder(options["Dest"], srcfilename, options["Subs"])
     for view in generated_views:
         if len(view) > 2:
@@ -644,7 +644,7 @@ def convert(file_list, dest_dir, dim_var, side, top, bottom, cyl_vert, coord_pre
             logging.info("File successfully converted")
             logging.info("Starting write process...")
             
-            print_prism_obj(generated_views, filename, options)
+            export_views_to_obj(generated_views, filename, options)
     
         elif ".3dd" in filename:
             filename = filename.strip('.3dd')
