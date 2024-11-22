@@ -637,6 +637,9 @@ def convert(file_list, dest_dir, dim_var, side, top, bottom, cyl_vert, coord_pre
 
         else:
             logging.error("invalid file type")
+            return
+    folder_path = os.path.realpath(dest_dir.get())
+    os.startfile(folder_path)
     return
 
 
