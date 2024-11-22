@@ -235,8 +235,8 @@ def get_extreme_coords(members: list[Member], nodes: list[Node]) -> tuple[float,
     max_z = 0
 
     for member in members:
-        i_node = nodes[member.inode]
-        j_node = nodes[member.jnode]
+        i_node = nodes[member.inode-1]
+        j_node = nodes[member.jnode-1]
 
         if i_node.x <= min_x:
             min_x = i_node.x
@@ -264,7 +264,7 @@ def get_extreme_coords(members: list[Member], nodes: list[Node]) -> tuple[float,
         if j_node.z >= max_z:
             max_z = j_node.z
         
-        return min_x, min_y, min_z, max_x, max_y, max_z
+    return min_x, min_y, min_z, max_x, max_y, max_z
 
 
 def get_views(members, nodes):
