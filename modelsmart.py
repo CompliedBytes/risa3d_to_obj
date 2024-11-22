@@ -47,6 +47,9 @@ class Joint:
             f"rot_x={self.rot_x:.3f}, rot_y={self.rot_y:.3f}, rot_z={self.rot_z:.3f}, "
             f"joint_type={self.joint_type!r}, sub_type={self.sub_type!r})"
         )
+    
+    def get_coordinates(self) -> list[float]:
+        return [self.x,self.y,self.z]
 
 @dataclass
 class Member:
@@ -62,7 +65,7 @@ class Member:
     shape_no: int
     material_no: int
     subtype: int
-    roll_angle: float
+    rotation: float
     use_torsion_flag: bool
     fix_my1: bool
     fix_mz1: bool
@@ -71,9 +74,13 @@ class Member:
     memb_color_red: float 
     memb_color_green: float
     memb_color_blue: float
-    theta_yz: float = 0
-    theta_xz: float = 0
-    theta_xy: float = 0
+    views: list[str] = None
+    radius: float = 0
+    height: float = 0
+    width: float = 0
+
+    def __post_init__(self) -> None:
+        self.views = ['3D']
 
     def __repr__(self):
         return (
@@ -81,11 +88,36 @@ class Member:
             f"effective_length_yy={self.effective_length_yy:.3f}, effective_length_zz={self.effective_length_zz:.3f}, "
             f"memb_length_zz_flag={self.memb_length_zz_flag!r}, memb_length_yy_flag={self.memb_length_yy_flag!r}, "
             f"offset_y={self.offset_y:.3f}, offset_z={self.offset_z:.3f}, shape_no={self.shape_no}, "
-            f"material_no={self.material_no}, subtype={self.subtype}, roll_angle={self.roll_angle:.3f}, "
+            f"material_no={self.material_no}, subtype={self.subtype}, rotation={self.rotation:.3f}, "
             f"use_torsion_flag={self.use_torsion_flag!r}, fix_my1={self.fix_my1!r}, fix_mz1={self.fix_mz1!r}, "
             f"fix_my2={self.fix_my2!r}, fix_mz2={self.fix_mz2!r}, memb_color_red={self.memb_color_red}, "
             f"memb_color_green={self.memb_color_green}, memb_color_blue={self.memb_color_blue})"
         )
+    
+    def get_i_coordinates(self,joints) -> list[float]:
+        x = joints[self.start_joint-1].x
+        y = joints[self.start_joint-1].y
+        z = joints[self.start_joint-1].z
+        return [x,y,z]
+    
+    def get_j_coordinates(self,joints) -> list[float]:
+        x = joints[self.end_joint-1].x
+        y = joints[self.end_joint-1].y
+        z = joints[self.end_joint-1].z
+        return [x,y,z]
+    
+    def set_views(self,joints: list[Joint], extreme_coords: tuple) -> None:
+        ix, iy, iz = joints[self.start_joint-1].get_coordinates()
+        jx, jy, jz = joints[self.end_joint-1].get_coordinates()
+
+        if iy == extreme_coords[4] and jy == extreme_coords[4]:
+            self.views.append('top')
+        if iy == extreme_coords[1] and jy == extreme_coords[1]:
+            self.views.append('bottom')
+        if iz == extreme_coords[2] and jz == extreme_coords[2]:
+            self.views.append('side1')
+        if iz == extreme_coords[5] and jz == extreme_coords[5]:
+            self.views.append('side2')
 
 @dataclass
 class Shape:
@@ -140,7 +172,7 @@ def process_member(member_data: str) -> Member:
                   shape_no=int(data[9]),
                   material_no=int(data[10]),
                   subtype=int(data[11]),
-                  roll_angle=float(data[12]),
+                  rotation=float(data[12]),
                   use_torsion_flag=bool(data[13]),
                   fix_my1=bool(data[14]),
                   fix_mz1=bool(data[15]),
@@ -149,6 +181,8 @@ def process_member(member_data: str) -> Member:
                   memb_color_red=float(data[18]),
                   memb_color_green=float(data[19]),
                   memb_color_blue=float(data[20]))
+    
+
 
 def process_shape(shape_data: list[str]) -> Shape:
         data1 = shape_data[2].strip().split(" ")
@@ -167,164 +201,52 @@ def process_shape(shape_data: list[str]) -> Shape:
                      float(data2[4]),
                      float(data2[5]))
 
-file = "Test-truss.3dd"
-joints = []
-members = []
-shapes = []
-with open(file,'r') as file:
-    file_type=file.readline().strip()
-    file_version=file.readline().strip()
-    data = file.readline().strip()
-    data = data.strip().split(" ")
-    model_file = ModelSmartFile(file_version,
-                                int(data[0]),
-                                int(data[1]),
-                                int(data[2]),
-                                int(data[3]),
-                                int(data[4]))
-    
-    for i in range(model_file.num_joints):
-        joint = process_joint(file.readline().strip())
-        joints.append(joint)
 
-    for i in range(model_file.num_members):
-        member = process_member(file.readline().strip())
-        members.append(member)
-
-    #this data is unused skips joint load data
-    for i in range(model_file.num_joints):
-        file.readline()
-
-    for i in range(model_file.num_shapes):
-        shape_data = []
-        shape_data.append(file.readline().strip())
-        shape_data.append(file.readline().strip())
-        shape_data.append(file.readline().strip())
-        shape_data.append(file.readline().strip())
-        shape = process_shape(shape_data)
-        shapes.append(shape)
-
-#exact same as r3d
-def get_plane_angle(vector: np.array, normal: np.array) -> float:
-    #check vector and normal are the right size
-
-    flat = vector.flatten()
-    dot = np.dot(flat,normal)
-
-    vect_mag = np.linalg.norm(flat)
-    norm_mag = np.linalg.norm(normal)
-
-    if vect_mag == 0 or norm_mag == 0:
-        print("Vector or Normal is of zero length")
-    cos_theta = dot / (vect_mag*norm_mag)
-
-    theta_rad = np.arccos(cos_theta)
-    theta_plane = 90 - np.degrees(theta_rad)
-
-    return theta_plane
-
-#almost exact same as r3d
-def compute_and_set_angles(members: list[Member], joints: list[Joint]) -> None:
+def set_member_dimensions(members: list[Member], shapes: dict[str, Shape]) -> None:
     for member in members:
-        # Creates a vector from the i and j nodes of the member
-        start_joint = joints[member.start_joint-1]
-        end_joint = joints[member.end_joint-1]
-        member_vect = np.array([[end_joint.x - start_joint.x],[end_joint.y - start_joint.y],[end_joint.z - start_joint.z]])
+        shape = shapes[member.shape_no-1]
+        member.height = shape.height
+        member.width = shape.width
+
+def parse_file(file_name):
+    joints = []
+    members = []
+    shapes = []
+    with open(file_name,'r') as file:
+        file_type=file.readline().strip()
+        file_version=file.readline().strip()
+        data = file.readline().strip()
+        data = data.strip().split(" ")
+        model_file = ModelSmartFile(file_version,
+                                    int(data[0]),
+                                    int(data[1]),
+                                    int(data[2]),
+                                    int(data[3]),
+                                    int(data[4]))
         
-        yz_normal = np.array([1,0,0])
-        xz_normal = np.array([0,1,0])
-        xy_normal = np.array([0,0,1])
+        for i in range(model_file.num_joints):
+            joint = process_joint(file.readline().strip())
+            joints.append(joint)
 
-        #The .item() here is used to convert from numpy flot to python flot
-        member.theta_yz = get_plane_angle(member_vect, yz_normal).item()
-        member.theta_xz = get_plane_angle(member_vect, xz_normal).item()
-        member.theta_xy = get_plane_angle(member_vect, xy_normal).item()
+        for i in range(model_file.num_members):
+            member = process_member(file.readline().strip())
+            members.append(member)
 
-#exact same as r3d
-def get_ortho_vectors(vector: np.array) -> tuple[np.array, np.array]:
-    #Check that array is the right size
+        #this data is unused skips joint load data
+        for i in range(model_file.num_joints):
+            file.readline()
 
-    norm = np.linalg.norm(vector)
-    if norm == 0:
-        print("Vector is of zero length")
+        for i in range(model_file.num_shapes):
+            shape_data = []
+            shape_data.append(file.readline().strip())
+            shape_data.append(file.readline().strip())
+            shape_data.append(file.readline().strip())
+            shape_data.append(file.readline().strip())
+            shape = process_shape(shape_data)
+            shapes.append(shape)
 
-    i_norm = vector / norm
-    
-    if np.allclose(i_norm, [1, 0, 0]) or np.allclose(i_norm, [-1, 0, 0]):
-        temp_vector = np.array([0, 1, 0])  # Use y-axis if aligned with x-axis
-    elif np.allclose(i_norm, [0, 1, 0]) or np.allclose(i_norm, [0, -1, 0]):
-        temp_vector = np.array([0, 0, 1])  # Use z-axis if aligned with y-axis
-    else:
-        temp_vector = np.array([1, 0, 0])  # Default to x-axis otherwise
+    set_member_dimensions(members, shapes)
 
-    v1 = np.cross(i_norm, temp_vector)
-    v1 = v1 / np.linalg.norm(v1)
-    v2 = np.cross(i_norm, v1)
-    v2 = v2 / np.linalg.norm(v2)
-
-    return v1, v2
-
-#almost exact same as r3d
-def gen_rect_face_vertices(member: list[Member], joints: list[Joint],shapes: list[Shape]) -> tuple[np.array, list[list[int]]]:
-    start_joint = joints[member.start_joint-1]
-    end_joint = joints[member.end_joint-1]
-
-    dir_vec = np.array([end_joint.x - start_joint.x, end_joint.y - start_joint.y, end_joint.z - start_joint.z])
-
-    start_vec = np.array([start_joint.x, start_joint.y, start_joint.z])
-    end_vec = np.array([end_joint.x, end_joint.y, end_joint.z])
-    
-    v1,v2 = get_ortho_vectors(dir_vec)
-    half_width_vec = shapes[member.shape_no-1].width / 2 * v1
-    half_height_vec = shapes[member.shape_no-1].width / 2 * v2
-
-    corners = []
-
-    # Create the four corners of the face
-    corners.append(start_vec + half_width_vec + half_height_vec)
-    corners.append(start_vec - half_width_vec + half_height_vec)
-    corners.append(start_vec - half_width_vec - half_height_vec)
-    corners.append(start_vec + half_width_vec - half_height_vec) 
-
-    corners.append(end_vec + half_width_vec + half_height_vec)
-    corners.append(end_vec - half_width_vec + half_height_vec)
-    corners.append(end_vec - half_width_vec - half_height_vec)
-    corners.append(end_vec + half_width_vec - half_height_vec)
-
-    faces = [
-            [1, 2, 3, 4],  # Bottom face
-            [5, 6, 7, 8],  # Top face
-            [1, 2, 6, 5],  # Side face
-            [2, 3, 7, 6],  # Side face
-            [3, 4, 8, 7],  # Side face
-            [4, 1, 5, 8]   # Side face
-        ]
-
-    return np.array(corners), faces
-
-def print_prism_obj(verticies, faces):
-    obj_file = open("output.obj", "w")
-
-    for i, vertex in enumerate(verticies, start=1):
-        obj_file.write(f"v {vertex[0]} {vertex[1]} {vertex[2]}\n")
-
-    for face in faces:
-        obj_file.write(f"f {' '.join(map(str, face))}\n")
-    obj_file.close()
-
-compute_and_set_angles(members, joints)
-
-
-all_verticies =[]
-all_faces = []
-vertex_count = 0
-
-for member in members:
-    corners, faces = gen_rect_face_vertices(member,joints,shapes)
-    faces = [[vertex_count +idx for idx in face] for face in faces]
-    all_verticies.extend(corners)
-    all_faces.extend(faces)
-    vertex_count += corners.__len__()
-
-print_prism_obj(all_verticies, all_faces)
-print("file converted!")
+    print("modelsmart file parsed")
+    return joints, members, shapes
+        

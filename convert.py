@@ -53,7 +53,7 @@ class Node:
     def get_coordinates(self) -> list[float]:
         return [self.x, self.y, self.z]
     
-def get_extreme_coords(nodes: List[Union[Node,ms.Joint]]) -> tuple[float, float, float, float, float, float]:
+def get_extreme_coords(items: List[Union[Node,ms.Joint]]) -> tuple[float, float, float, float, float, float]:
     """
     Finds the extreme x, y, and z coordinates from a list of Node or Joint instances.
     Will work with any object that has x, y, and z attributes.
@@ -68,13 +68,13 @@ def get_extreme_coords(nodes: List[Union[Node,ms.Joint]]) -> tuple[float, float,
     tuple[float, float, float, float, float, float]
         The minimum and maximum x, y, z coordinates.
     """
-    min_x = min([node.x for node in nodes]) 
-    min_y = min([node.y for node in nodes])
-    min_z = min([node.z for node in nodes])
+    min_x = min([item.x for item in items]) 
+    min_y = min([item.y for item in items])
+    min_z = min([item.z for item in items])
 
-    max_x = max([node.x for node in nodes])
-    max_y = max([node.y for node in nodes])
-    max_z = max([node.z for node in nodes])
+    max_x = max([item.x for item in items])
+    max_y = max([item.y for item in items])
+    max_z = max([item.z for item in items])
 
 
     return min_x, min_y, min_z, max_x, max_y, max_z
@@ -380,7 +380,6 @@ def gen_circ_face_vertices(i_coords: list[float], j_coords: list[float], radius:
     dir_vec, v1, v2 = generate_face_vectors(i_coords, j_coords)
     i_vec = np.array(i_coords)
     j_vec = np.array(j_coords)
-    logging.info(f"Generating rectangle face vertices for member with i-node at {i_vec} and j-node at {j_vec}")
 
     half_width_vect = v1 * radius/2
     half_height_vect = v2 * radius/2
@@ -479,10 +478,14 @@ def export_views_to_obj(generated_views, srcfilename, options):
             logging.error(f"{view[0]}{view[1]}.")
 
 def gen_view(members, nodes, filename, view, options):
+
+    # this technially "works" with modelsmart files but
+    # needs to be fixed so that it is really modular
     logging.info(f"Generating {view} view")
     all_vertices =[]
     all_faces = []
     vertex_count = 0
+
 
     for member in members:
         if view in member.views:
@@ -595,13 +598,43 @@ def convert(file_list, dest_dir, dim_var, side, top, bottom, cyl_vert, coord_pre
                 if bottom.get():
                     generated_views.append(gen_view(members, nodes, filename, 'bottom', options))
 
+            export_views_to_obj(generated_views, filename, options)
             logging.info("File successfully converted")
             logging.info("Starting write process...")
-            
-            export_views_to_obj(generated_views, filename, options)
     
         elif ".3dd" in filename:
             filename = filename.strip('.3dd')
+            joints, members, shapes = ms.parse_file(filepath)
+            for member in members:
+                member.set_views(joints, get_extreme_coords(joints))
+
+            generated_views = []
+            if dim_var.get() == '3D':
+                generated_views.append(gen_view(members, joints, filename, '3D', options))
+            elif dim_var.get() == 'All':
+                generated_views.append(gen_view(members, joints, filename, '3D', options))
+                if side.get():
+                    generated_views.append(gen_view(members, joints, filename, 'side1', options))
+                    generated_views.append(gen_view(members, joints, filename, 'side2', options))
+                if top.get():
+                    generated_views.append(gen_view(members, joints, filename, 'top', options))
+                if bottom.get():
+                    generated_views.append(gen_view(members, joints, filename, 'bottom', options))
+            elif dim_var.get() == '2D':
+                if side.get():
+                    generated_views.append(gen_view(members, joints, filename, 'side1', options))
+                    generated_views.append(gen_view(members, joints, filename, 'side2', options))
+                if top.get():
+                    generated_views.append(gen_view(members, joints, filename, 'top' , options))
+                if bottom.get():
+                    generated_views.append(gen_view(members, joints, filename, 'bottom', options))
+            
+            export_views_to_obj(generated_views, filename, options)
+            logging.info("File successfully converted")
+            logging.info("Starting write process...")
+            
+            
+
         else:
             logging.error("invalid file type")
     return
