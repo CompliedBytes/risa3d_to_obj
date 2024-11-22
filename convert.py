@@ -6,7 +6,8 @@ from tkinter import ttk
 from tkinter import *
 from tkinter import filedialog
 from tktooltip import ToolTip
-from typing import Union, List
+from typing import Union, List, Tuple
+
 import modelsmart as ms
 
 LOGGING_LEVEL = logging.DEBUG
@@ -306,18 +307,51 @@ def rotate_vector(axis: np.array, angle: float) -> np.array:
 
     return rot
 
-def gen_rect_face_vertices(i_coords: list[float], j_coords: list[float], rotation, width, height) -> np.array:
+def generate_face_vectors(i_coords: list[float], j_coords: list[float], rotation: float = 0) -> Tuple[np.array, np.array, np.array]:
+    """
+    Prepare the direction vector and orthogonal vectors for a member.
+
+    Parameters
+    ----------
+    i_coords : list[float]
+        Coordinates of the i-node.
+    j_coords : list[float]
+        Coordinates of the j-node.
+    rotation : float, optional
+        Rotation angle in degrees, by default 0.
+
+    Returns
+    -------
+    Tuple[np.array, np.array, np.array]
+        The direction vector, and two orthogonal vectors (v1, v2).
+        Returns empty arrays if the direction vector has zero length.
+    """
     i_vec = np.array(i_coords)
     j_vec = np.array(j_coords)
-    logging.info(f"Generating rectangle face vertices for member with i-node at {i_vec} and j-node at {j_vec}")
     dir_vec = j_vec - i_vec
-    # Normalize the direction vector, if it is zero, return an empty list
+
+    # Normalize the direction vector
     if np.linalg.norm(dir_vec) == 0:
-        logging.error(f"Direction vector has zero length.")
-        return [], []
+        logging.error("Direction vector has zero length.")
+        return np.array([]), np.array([]), np.array([])
     dir_vec = dir_vec / np.linalg.norm(dir_vec)
 
-    v1,v2 = get_orthogonal_vectors(dir_vec)
+    # Get orthogonal vectors
+    v1, v2 = get_orthogonal_vectors(dir_vec)
+
+    # Apply rotation if specified
+    if rotation != 0:
+        rot_matrix = rotate_vector(dir_vec, rotation)  # Rotate around the member's axis
+        v1 = np.dot(rot_matrix, v1)
+        v2 = np.dot(rot_matrix, v2)
+
+    return dir_vec, v1, v2
+
+def gen_rect_face_vertices(i_coords: list[float], j_coords: list[float], rotation, width, height) -> np.array:
+
+    dir_vec, v1, v2 = generate_face_vectors(i_coords, j_coords, rotation)
+    i_vec = np.array(i_coords)
+    j_vec = np.array(j_coords)
 
     if rotation != 0:
         rot_matrix = rotate_vector(dir_vec, rotation)  # Rotate around the member's axis
@@ -342,18 +376,14 @@ def gen_rect_face_vertices(i_coords: list[float], j_coords: list[float], rotatio
 
     return corners
 
-def gen_circ_face_vertices(member, nodes, options):
-    i_node = nodes[member.inode-1]
-    j_node = nodes[member.jnode-1]
+def gen_circ_face_vertices(i_coords: list[float], j_coords: list[float], radius:float, options):
+    dir_vec, v1, v2 = generate_face_vectors(i_coords, j_coords)
+    i_vec = np.array(i_coords)
+    j_vec = np.array(j_coords)
+    logging.info(f"Generating rectangle face vertices for member with i-node at {i_vec} and j-node at {j_vec}")
 
-    dir_vec = np.array([j_node.x - i_node.x, j_node.y - i_node.y, j_node.z - i_node.z])
-
-    i_vec = np.array([i_node.x, i_node.y, i_node.z])
-    j_vec = np.array([j_node.x, j_node.y, j_node.z])
-    
-    v1, v2 = get_orthogonal_vectors(dir_vec)
-    half_width_vect = v1 * member.radius/2
-    half_height_vect = v2 * member.radius/2
+    half_width_vect = v1 * radius/2
+    half_height_vect = v2 * radius/2
    
     circle_size = int(options["Cyl"])
     arc_deg = 2*np.pi/circle_size
@@ -470,7 +500,9 @@ def gen_view(members, nodes, filename, view, options):
 
                 corners = gen_rect_face_vertices([ix,iy,iz], [jx,jy,jz], member.rotation, member.width, member.height)
             else:
-                corners, faces = gen_circ_face_vertices(member, nodes, options)
+                ix, iy, iz = member.get_i_coordinates(nodes)
+                jx, jy, jz = member.get_j_coordinates(nodes)
+                corners, faces = gen_circ_face_vertices([ix,iy,iz],[jx,jy,jz],member.radius,options)
 
             faces = [[vertex_count +idx for idx in face] for face in faces]
             all_vertices.extend(corners)
