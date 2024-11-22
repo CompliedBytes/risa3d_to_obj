@@ -42,6 +42,8 @@ logging.info("Logging setup complete.")
 def clean_dimension_input(dimension):
     return ''.join(char for char in dimension if char.isdigit() or char == '.' or char == '-')
 
+
+
 @dataclass
 class Point:
     x: float
@@ -63,6 +65,32 @@ class Node:
 
     def get_coordinates(self) -> list[float]:
         return [self.x, self.y, self.z]
+    
+def get_extreme_coords(nodes: List[Union[Node,ms.Joint]]) -> tuple[float, float, float, float, float, float]:
+    """
+    Finds the extreme x, y, and z coordinates from a list of Node or Joint instances.
+    Will work with any object that has x, y, and z attributes.
+
+    Parameters
+    ----------
+    items : List[Union[Node, modelsmart.Joint]]
+        A list of Node or Joint instances.
+
+    Returns
+    -------
+    tuple[float, float, float, float, float, float]
+        The minimum and maximum x, y, z coordinates.
+    """
+    min_x = min([node.x for node in nodes]) 
+    min_y = min([node.y for node in nodes])
+    min_z = min([node.z for node in nodes])
+
+    max_x = max([node.x for node in nodes])
+    max_y = max([node.y for node in nodes])
+    max_z = max([node.z for node in nodes])
+
+
+    return min_x, min_y, min_z, max_x, max_y, max_z
 
 @dataclass
 class Shape:
@@ -111,6 +139,20 @@ class Member:
     def get_j_coordinates(self,nodes) -> list[float]:
         x,y,z = nodes[self.jnode-1].get_coordinates()
         return [x,y,z]
+    
+    def set_views(self,nodes: list[Node], extreme_coords: tuple) -> None:
+        ix, iy, iz = nodes[self.inode-1].get_coordinates()
+        jx, jy, jz = nodes[self.jnode-1].get_coordinates()
+
+        if iy == extreme_coords[4] and jy == extreme_coords[4]:
+            self.views.append('top')
+        if iy == extreme_coords[1] and jy == extreme_coords[1]:
+            self.views.append('bottom')
+        if iz == extreme_coords[2] and jz == extreme_coords[2]:
+            self.views.append('side1')
+        if iz == extreme_coords[5] and jz == extreme_coords[5]:
+            self.views.append('side2')
+
 
 # Constants
 BACKGROUND_COLOR = 'lightblue'
@@ -227,50 +269,6 @@ def set_member_dimensions(members: list[Member], shapes: dict[str, Shape]) -> No
             member.radius = shape.radius
         else:
             logging.error(f"Shape not found: {member.shape_label}")
-
-def get_extreme_coords(nodes: List[Union[Node,ms.Joint]]) -> tuple[float, float, float, float, float, float]:
-    """
-    Finds the extreme x, y, and z coordinates from a list of Node or Joint instances.
-    Will work with any object that has x, y, and z attributes.
-
-    Parameters
-    ----------
-    items : List[Union[Node, modelsmart.Joint]]
-        A list of Node or Joint instances.
-
-    Returns
-    -------
-    tuple[float, float, float, float, float, float]
-        The minimum and maximum x, y, z coordinates.
-    """
-    min_x = min([node.x for node in nodes]) 
-    min_y = min([node.y for node in nodes])
-    min_z = min([node.z for node in nodes])
-
-    max_x = max([node.x for node in nodes])
-    max_y = max([node.y for node in nodes])
-    max_z = max([node.z for node in nodes])
-
-
-    return min_x, min_y, min_z, max_x, max_y, max_z
-
-def get_views(members, nodes):
-    ext_coords = get_extreme_coords(nodes)
-    for member in members:
-        i_node = nodes[member.inode-1]
-        j_node = nodes[member.jnode-1]
-        dir_vec = np.array([j_node.x - i_node.x, j_node.y - i_node.y, j_node.z - i_node.z])
-
-        # if abs(dir_vec[0]) % 90 == 0:
-        #     member.views.append('top')
-        if i_node.y == ext_coords[4] and j_node.y == ext_coords[4]:
-            member.views.append('top')
-        if i_node.y == ext_coords[1] and j_node.y == ext_coords[1]:
-            member.views.append('bottom')
-        if i_node.z == ext_coords[2] and j_node.z == ext_coords[2]:
-            member.views.append('side1')
-        if i_node.z == ext_coords[5] and j_node.z == ext_coords[5]:
-            member.views.append('side2')
 
 def get_orthogonal_vectors(vector: np.array) -> tuple[np.array, np.array]:
     """
@@ -562,7 +560,9 @@ def convert(file_list, dest_dir, dim_var, side, top, bottom, cyl_vert, coord_pre
                 return
 
             set_member_dimensions(members, shapes)
-            get_views(members, nodes)
+            for member in members:
+                member.set_views(nodes, get_extreme_coords(nodes))
+
             generated_views = []
             if dim_var.get() == '3D':
                 generated_views.append(gen_view(members, nodes, filename, '3D', options))
