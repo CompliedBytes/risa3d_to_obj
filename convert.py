@@ -42,20 +42,6 @@ logging.info("Logging setup complete.")
 def clean_dimension_input(dimension):
     return ''.join(char for char in dimension if char.isdigit() or char == '.' or char == '-')
 
-
-
-@dataclass
-class Point:
-    x: float
-    y: float
-    z: float
-
-@dataclass
-class Face:
-    v1: Point
-    v2: Point
-    v3: Point
-
 @dataclass
 class Node:
     label: str
