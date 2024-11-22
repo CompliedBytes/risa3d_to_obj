@@ -226,49 +226,19 @@ def set_member_dimensions(members: list[Member], shapes: dict[str, Shape]) -> No
         else:
             logging.error(f"Shape not found: {member.shape_label}")
 
-def get_extreme_coords(members: list[Member], nodes: list[Node]) -> tuple[float, float, float, float, float, float]:
-    min_x = 10000
-    min_y = 10000
-    min_z = 10000
-    max_x = 0
-    max_y = 0
-    max_z = 0
+def get_extreme_coords(nodes: list[Node]) -> tuple[float, float, float, float, float, float]:
+    min_x = min([node.x for node in nodes]) 
+    min_y = min([node.y for node in nodes])
+    min_z = min([node.z for node in nodes])
 
-    for member in members:
-        i_node = nodes[member.inode-1]
-        j_node = nodes[member.jnode-1]
+    max_x = max([node.x for node in nodes])
+    max_y = max([node.y for node in nodes])
+    max_z = max([node.z for node in nodes])
 
-        if i_node.x <= min_x:
-            min_x = i_node.x
-        if j_node.x <= min_x:
-            min_x = j_node.x
-        if i_node.y <= min_y:
-            min_y = i_node.y
-        if j_node.y <= min_y:
-            min_y = j_node.y
-        if i_node.z <= min_z:
-            min_z = i_node.z
-        if j_node.z <= min_z:
-            min_z = j_node.z
-        
-        if i_node.x >= max_x:
-            max_x = i_node.x
-        if j_node.x >= max_x:
-            max_x = j_node.x
-        if i_node.y >= max_y:
-            max_y = i_node.y
-        if j_node.y >= max_y:
-            max_y = j_node.y
-        if i_node.z >= max_z:
-            max_z = i_node.z
-        if j_node.z >= max_z:
-            max_z = j_node.z
-        
     return min_x, min_y, min_z, max_x, max_y, max_z
 
-
 def get_views(members, nodes):
-    ext_coords = get_extreme_coords(members, nodes)
+    ext_coords = get_extreme_coords(nodes)
     for member in members:
         i_node = nodes[member.inode-1]
         j_node = nodes[member.jnode-1]
