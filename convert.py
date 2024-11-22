@@ -6,6 +6,8 @@ from tkinter import ttk
 from tkinter import *
 from tkinter import filedialog
 from tktooltip import ToolTip
+from typing import Union, List
+import modelsmart as ms
 
 LOGGING_LEVEL = logging.DEBUG
 LOG_FILE = "convert.log"
@@ -226,7 +228,21 @@ def set_member_dimensions(members: list[Member], shapes: dict[str, Shape]) -> No
         else:
             logging.error(f"Shape not found: {member.shape_label}")
 
-def get_extreme_coords(nodes: list[Node]) -> tuple[float, float, float, float, float, float]:
+def get_extreme_coords(nodes: List[Union[Node,ms.Joint]]) -> tuple[float, float, float, float, float, float]:
+    """
+    Finds the extreme x, y, and z coordinates from a list of Node or Joint instances.
+    Will work with any object that has x, y, and z attributes.
+
+    Parameters
+    ----------
+    items : List[Union[Node, modelsmart.Joint]]
+        A list of Node or Joint instances.
+
+    Returns
+    -------
+    tuple[float, float, float, float, float, float]
+        The minimum and maximum x, y, z coordinates.
+    """
     min_x = min([node.x for node in nodes]) 
     min_y = min([node.y for node in nodes])
     min_z = min([node.z for node in nodes])
@@ -234,6 +250,7 @@ def get_extreme_coords(nodes: list[Node]) -> tuple[float, float, float, float, f
     max_x = max([node.x for node in nodes])
     max_y = max([node.y for node in nodes])
     max_z = max([node.z for node in nodes])
+
 
     return min_x, min_y, min_z, max_x, max_y, max_z
 
