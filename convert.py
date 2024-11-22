@@ -173,13 +173,6 @@ def get_units(data) -> dict[str, str]:
     
     return units_text
 
-# This function is used to extract the float from the scientific notation
-# This probably won't be needed since you can directly convert the string to float
-def extract_float(numStr) -> float:
-    sci = numStr.split('e+')
-    num = float(sci[0])*10**(int(sci[1]))
-    return num
-
 # This function is used to get the nodes from the risa file
 def get_nodes(data) -> list[Node]:
     # Node Format: Name/ID  X coord, Y coord, Z coord
