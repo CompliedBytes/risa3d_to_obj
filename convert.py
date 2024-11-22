@@ -676,16 +676,12 @@ def main()->None:
 
     # Advanced settings sub-page is in a callable function that is called when the user clicks on the "Advanced" button.
     def Advanced_Settings():
-        advanced = Toplevel(root)
+        adv_x = root.winfo_x() + 120
+        adv_y = root.winfo_y() + 60
+        advanced = Toplevel(root, takefocus=1)
+        advanced.geometry(f"+{adv_x}+{adv_y}")
         advanced.grab_set()
-        advanced.focus_force()
         advanced.title("Advanced Settings")
-        style = ttk.Style(advanced)
-        style.configure('UFrame', background=BACKGROUND_COLOR, foreground='black')
-        style.configure('TFrame', background=BACKGROUND_COLOR, foreground='black')
-        style.configure('TLabel', background=BACKGROUND_COLOR, foreground='black')
-        style.configure('TCheckbutton', background=BACKGROUND_COLOR)
-        
         advframe = ttk.Frame(advanced, padding="3 3 12 12")
         advframe.grid(column=0, row=0, sticky=(N, W, E, S))
         root.columnconfigure(0, weight=1)
@@ -734,6 +730,7 @@ def main()->None:
         exit_button.grid(column=0, row=10, sticky=E)
         advanced.mainloop()
     
+
     root = Tk()
     root.title("RISA-3D to OBJ Converter")
     root.resizable(False, False)
@@ -741,11 +738,12 @@ def main()->None:
     style.configure('UFrame', background=BACKGROUND_COLOR, foreground='black')
     style.configure('TFrame', background=BACKGROUND_COLOR, foreground='black')
     style.configure('TLabel', background=BACKGROUND_COLOR, foreground='black')
+    style.configure('TCheckbutton', background=BACKGROUND_COLOR, foreground='black')
     mainframe = ttk.Frame(root, padding="3 3 12 12")
     mainframe.grid(column=0, row=0, sticky=(N, W, E, S))
     root.columnconfigure(0, weight=1)
     root.rowconfigure(0, weight=1)
-
+    
     file = StringVar(value=[])
     dim_var = StringVar(value='All')
     side = BooleanVar(value=True)
