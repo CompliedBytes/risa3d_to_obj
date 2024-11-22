@@ -1,11 +1,7 @@
 from dataclasses import dataclass
 import numpy as np
-
-
 import logging
 import os
-
-
 from tkinter import ttk
 from tkinter import *
 from tkinter import filedialog
@@ -346,29 +342,26 @@ def rotate_vector(axis: np.array, angle: float) -> np.array:
 
     return rot
 
-def gen_rect_face_vertices(member: Member, nodes: list[Node], options) -> tuple[np.array, list[list[int]]]:
-    ix,iy,iz = member.get_i_coordinates(nodes)
-    jx,jy,jz = member.get_j_coordinates(nodes)
-    i_vec = np.array([ix,iy,iz])
-    j_vec = np.array([jx,jy,jz])
-
+def gen_rect_face_vertices(i_coords: list[float], j_coords: list[float], rotation, width, height) -> np.array:
+    i_vec = np.array(i_coords)
+    j_vec = np.array(j_coords)
+    logging.info(f"Generating rectangle face vertices for member with i-node at {i_vec} and j-node at {j_vec}")
     dir_vec = j_vec - i_vec
-
     # Normalize the direction vector, if it is zero, return an empty list
     if np.linalg.norm(dir_vec) == 0:
-        logging.error(f"Member {member.label} has zero length.")
+        logging.error(f"Direction vector has zero length.")
         return [], []
     dir_vec = dir_vec / np.linalg.norm(dir_vec)
 
     v1,v2 = get_orthogonal_vectors(dir_vec)
 
-    if member.rotation != 0:
-        rot_matrix = rotate_vector(dir_vec, member.rotation)  # Rotate around the member's axis
+    if rotation != 0:
+        rot_matrix = rotate_vector(dir_vec, rotation)  # Rotate around the member's axis
         v1 = np.dot(rot_matrix, v1)
         v2 = np.dot(rot_matrix, v2)
 
-    half_width_vec = member.width / 2 * v1
-    half_height_vec = member.height / 2 * v2
+    half_width_vec = width / 2 * v1
+    half_height_vec = height / 2 * v2
 
     # Create the four corners of the face
     corners = [
@@ -383,16 +376,7 @@ def gen_rect_face_vertices(member: Member, nodes: list[Node], options) -> tuple[
         j_vec + half_width_vec - half_height_vec
     ]
 
-    faces = [
-            [1, 2, 3, 4],  # Bottom face
-            [5, 6, 7, 8],  # Top face
-            [1, 2, 6, 5],  # Side face
-            [2, 3, 7, 6],  # Side face
-            [3, 4, 8, 7],  # Side face
-            [4, 1, 5, 8]   # Side face
-        ]
-
-    return corners, faces
+    return corners
 
 def gen_circ_face_vertices(member, nodes, options):
     i_node = nodes[member.inode-1]
@@ -509,7 +493,18 @@ def gen_view(members, nodes, filename, view, options):
     for member in members:
         if view in member.views:
             if(member.radius == 0):
-                corners, faces = gen_rect_face_vertices(member, nodes, options)
+                faces = [
+                        [1, 2, 3, 4],  # Bottom face
+                        [5, 6, 7, 8],  # Top face
+                        [1, 2, 6, 5],  # Side face
+                        [2, 3, 7, 6],  # Side face
+                        [3, 4, 8, 7],  # Side face
+                        [4, 1, 5, 8]   # Side face
+                    ]
+                ix, iy, iz = member.get_i_coordinates(nodes)
+                jx, jy, jz = member.get_j_coordinates(nodes)
+
+                corners = gen_rect_face_vertices([ix,iy,iz], [jx,jy,jz], member.rotation, member.width, member.height)
             else:
                 corners, faces = gen_circ_face_vertices(member, nodes, options)
 
