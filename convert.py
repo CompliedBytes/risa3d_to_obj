@@ -353,11 +353,6 @@ def gen_rect_face_vertices(i_coords: list[float], j_coords: list[float], rotatio
     i_vec = np.array(i_coords)
     j_vec = np.array(j_coords)
 
-    if rotation != 0:
-        rot_matrix = rotate_vector(dir_vec, rotation)  # Rotate around the member's axis
-        v1 = np.dot(rot_matrix, v1)
-        v2 = np.dot(rot_matrix, v2)
-
     half_width_vec = width / 2 * v1
     half_height_vec = height / 2 * v2
 
