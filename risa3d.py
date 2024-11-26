@@ -1,6 +1,9 @@
 from dataclasses import dataclass
-import numpy as np
 import logging
+
+
+HEADINGS = ['UNITS', 'NODES','.MEMBERS_MAIN_DATA','SHAPES_LIST']
+END = 'END'
 
 @dataclass
 class Node:
@@ -8,6 +11,10 @@ class Node:
     x: float
     y: float
     z: float
+    
+    def get_coordinates(self) -> list[float]:
+        return [self.x, self.y, self.z]
+
 
 @dataclass
 class Shape:
@@ -184,3 +191,48 @@ def set_member_dimensions(members: list[Member], shapes: dict[str, Shape]) -> No
             member.radius = shape.radius
         else:
             logging.error(f"Shape not found: {member.shape_label}")
+
+
+def parse_file(filename):
+    nodes = []
+    members = []
+    shapes = []
+    try:
+        with open(filename, 'r') as file:
+            for line in file:
+                for heading in HEADINGS:
+                    if heading in line and "END" not in line:
+                        line = line.strip()
+                        num_entries = int(line.split('<')[-1].strip('>'))
+                        data = []
+                        match heading:
+                            case 'UNITS':
+                                for i in range(num_entries):
+                                    data.append(file.readline().strip())
+                                units = get_units(data)
+                            case 'NODES':
+                                for i in range(num_entries):
+                                    data.append(file.readline().strip())
+                                nodes = get_nodes(data)
+                            case '.MEMBERS_MAIN_DATA':
+                                for i in range(num_entries):
+                                    data.append(file.readline())
+                                members = get_members(data)
+                            case 'SHAPES_LIST':
+                                for i in range(num_entries):
+                                    data.append(file.readline())
+                                shapes = get_shapes_list(data)
+    except FileNotFoundError:
+        logging.error("File not found")
+        return
+    except PermissionError:
+        logging.error("Permission denied, could not read file")
+        return
+    except Exception as e:
+        logging.error("An unknown error occurred")
+        return
+    
+    set_member_dimensions(members, shapes)
+
+    print("RISA file parsed")
+    return nodes, members, shapes
