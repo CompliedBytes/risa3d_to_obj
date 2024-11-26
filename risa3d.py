@@ -235,4 +235,4 @@ def parse_file(filename):
     set_member_dimensions(members, shapes)
 
     logging.info("RISA file parsed")
-    return nodes, members, shapes
+    return nodes, members

@@ -373,7 +373,7 @@ def convert(file_list, dest_dir, dim_var, side, top, bottom, cyl_vert, coord_pre
             nodes = []
             members = []
             try:
-                nodes, members, shapes = r3d.parse_file(filepath)
+                nodes, members = r3d.parse_file(filepath)
             except Exception as e:
                 logging.error(f"Error parsing {filename}: {e}")
                 return
@@ -388,7 +388,7 @@ def convert(file_list, dest_dir, dim_var, side, top, bottom, cyl_vert, coord_pre
     
         elif ".3dd" in filename:
             filename = filename.strip('.3dd')
-            joints, members, shapes = ms.parse_file(filepath)
+            joints, members = ms.parse_file(filepath)
             for member in members:
                 member.set_views(joints, get_extreme_coords(joints))
 

@@ -248,5 +248,5 @@ def parse_file(file_name):
     set_member_dimensions(members, shapes)
 
     logging.info("modelsmart file parsed")
-    return joints, members, shapes
+    return joints, members
         
