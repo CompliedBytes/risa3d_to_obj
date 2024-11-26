@@ -71,6 +71,7 @@ BACKGROUND_COLOR = 'lightblue'
 def get_orthogonal_vectors(vector: np.array) -> tuple[np.array, np.array]:
     """
     This function takes a vector and returns two orthogonal vectors to it.
+    Assuming the coordinates are 3 dimensional.
 
     Parameters
     ----------
@@ -110,6 +111,7 @@ def get_orthogonal_vectors(vector: np.array) -> tuple[np.array, np.array]:
 def rotate_vector(axis: np.array, angle: float) -> np.array:
     """
     This function uses Rodrigues' Rotation Formula to rotate a vector about an axis by a given angle.
+    Assuming the coordinates are 3 dimensional.
 
     Parameters
     ----------
@@ -139,7 +141,8 @@ def rotate_vector(axis: np.array, angle: float) -> np.array:
 
 def generate_face_vectors(i_coords: list[float], j_coords: list[float], rotation: float = 0) -> Tuple[np.array, np.array, np.array]:
     """
-    Prepare the direction vector and orthogonal vectors for a member.
+    Prepare the direction vector and orthogonal vectors for a member. 
+    Assuming the coordinates are 3 dimensional.
 
     Parameters
     ----------
@@ -179,7 +182,8 @@ def generate_face_vectors(i_coords: list[float], j_coords: list[float], rotation
 
 def gen_rect_face_vertices(i_coords: list[float], j_coords: list[float], rotation, width, height) -> np.array:
     """
-    Generate the vertices of a rectangular face.
+    Generate the vertices of a rectangular face. 
+    Assuming the coordinates are 3 dimensional.
 
     Parameters
     ----------
@@ -233,6 +237,7 @@ def gen_rect_face_vertices(i_coords: list[float], j_coords: list[float], rotatio
 def gen_circ_face_vertices(i_coords: list[float], j_coords: list[float], radius:float, options):
     """
     Generate the vertices of a circular face.
+    Assuming the coordinates are 3 dimensional.
 
     Parameters
     ----------
