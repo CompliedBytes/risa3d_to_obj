@@ -110,6 +110,18 @@ def get_orthogonal_vectors(vector: np.array) -> tuple[np.array, np.array]:
 def rotate_vector(axis: np.array, angle: float) -> np.array:
     """
     This function uses Rodrigues' Rotation Formula to rotate a vector about an axis by a given angle.
+
+    Parameters
+    ----------
+    axis : np.array
+        The axis of rotation.
+    angle : float
+        The angle of rotation in degrees.
+
+    Returns
+    -------
+    np.array
+        The rotation matrix.
     """
     angle = np.radians(angle)
     cos_theta = np.cos(angle)
@@ -166,7 +178,27 @@ def generate_face_vectors(i_coords: list[float], j_coords: list[float], rotation
     return dir_vec, v1, v2
 
 def gen_rect_face_vertices(i_coords: list[float], j_coords: list[float], rotation, width, height) -> np.array:
+    """
+    Generate the vertices of a rectangular face.
 
+    Parameters
+    ----------
+    i_coords : list[float]
+        Coordinates of one end.
+    j_coords : list[float]
+        Coordinates of the other end.
+    rotation : float
+        Rotation angle in degrees.
+    width : float
+        Width of the face.
+    height : float
+        Height of the face.
+
+    Returns
+    -------
+    np.array
+        The four corners of each end face cap.
+    """
     dir_vec, v1, v2 = generate_face_vectors(i_coords, j_coords, rotation)
     i_vec = np.array(i_coords)
     j_vec = np.array(j_coords)
@@ -187,9 +219,37 @@ def gen_rect_face_vertices(i_coords: list[float], j_coords: list[float], rotatio
         j_vec + half_width_vec - half_height_vec
     ]
 
-    return corners
+    faces = [
+        [1, 2, 3, 4],  # Bottom face
+        [5, 6, 7, 8],  # Top face
+        [1, 2, 6, 5],  # Side face
+        [2, 3, 7, 6],  # Side face
+        [3, 4, 8, 7],  # Side face
+        [4, 1, 5, 8]   # Side face
+    ]
+
+    return corners, faces
 
 def gen_circ_face_vertices(i_coords: list[float], j_coords: list[float], radius:float, options):
+    """
+    Generate the vertices of a circular face.
+
+    Parameters
+    ----------
+    i_coords : list[float]
+        Coordinates of one end.
+    j_coords : list[float]
+        Coordinates of the other end.
+    radius : float
+        Radius of the face.
+    options : dict
+        Dictionary containing the user options from the GUI.
+
+    Returns
+    -------
+    np.array
+        The vertices of the circular face caps.
+    """
     dir_vec, v1, v2 = generate_face_vectors(i_coords, j_coords)
     i_vec = np.array(i_coords)
     j_vec = np.array(j_coords)
@@ -239,6 +299,23 @@ def gen_circ_face_vertices(i_coords: list[float], j_coords: list[float], radius:
     return corners, faces
 
 def create_folder(dest_dir, filename, subs_flag):
+    """
+    Create a folder to store the generated OBJ files.
+    
+    Parameters
+    ----------
+    dest_dir : str
+        The destination directory.
+    filename : str
+        The name of the file.
+    subs_flag : bool
+        Flag to create subfolders for each file.
+
+    Returns
+    -------
+    str
+        The path to the folder where the OBJ files will be stored.
+    """
     new_folder = dest_dir + '\\' + filename
 
     logging.info(f"Verifying {dest_dir} exists...")
@@ -269,6 +346,22 @@ def create_folder(dest_dir, filename, subs_flag):
         return os.getcwd()
 
 def export_views_to_obj(generated_views, srcfilename, options):
+    """
+    Export the generated views to OBJ files.
+
+    Parameters
+    ----------
+    generated_views : list
+        A list of the generated views.
+    srcfilename : str
+        The name of the source file.
+    options : dict 
+        A dictionary containing the user options from the GUI
+
+    Returns
+    -------
+    None
+    """
     folder = create_folder(options["Dest"], srcfilename, options["Subs"])
     for view in generated_views:
         if len(view) > 2:
@@ -301,18 +394,10 @@ def gen_view(members, nodes, filename, view, options):
     for member in members:
         if view in member.views:
             if(member.radius == 0):
-                faces = [
-                        [1, 2, 3, 4],  # Bottom face
-                        [5, 6, 7, 8],  # Top face
-                        [1, 2, 6, 5],  # Side face
-                        [2, 3, 7, 6],  # Side face
-                        [3, 4, 8, 7],  # Side face
-                        [4, 1, 5, 8]   # Side face
-                    ]
                 ix, iy, iz = member.get_i_coordinates(nodes)
                 jx, jy, jz = member.get_j_coordinates(nodes)
 
-                corners = gen_rect_face_vertices([ix,iy,iz], [jx,jy,jz], member.rotation, member.width, member.height)
+                corners, faces = gen_rect_face_vertices([ix,iy,iz], [jx,jy,jz], member.rotation, member.width, member.height)
             else:
                 ix, iy, iz = member.get_i_coordinates(nodes)
                 jx, jy, jz = member.get_j_coordinates(nodes)
@@ -329,6 +414,32 @@ def gen_view(members, nodes, filename, view, options):
     return np.round(all_vertices, decimals=int(options["Prec"])), all_faces, filename + '_' + view
 
 def generate_views(members,nodes,filename,options,dim_var,side,top,bottom):
+    """
+    Generate the views for the members and nodes.
+
+    Parameters
+    ----------
+    members : list[Member]
+        A list of Member instances.
+    nodes : list[Node]
+        A list of Node instances.
+    filename : str
+        The name of the file.
+    options : dict
+        A dictionary containing the user options from the GUI.
+    dim_var : str
+
+    side : bool
+
+    top : bool
+
+    bottom : bool
+
+    Returns
+    -------
+    list
+        A list of the generated views.
+    """
     generated_views = []
     if dim_var.get() == '3D':
         generated_views.append(gen_view(members, nodes, filename, '3D', options))
@@ -352,6 +463,32 @@ def generate_views(members,nodes,filename,options,dim_var,side,top,bottom):
     return generated_views
 
 def convert(file_list, dest_dir, dim_var, side, top, bottom, cyl_vert, coord_prec):
+    """
+    Convert the selected file(s) to OBJ format.
+
+    Parameters
+    ----------
+    file_list : str
+        The list of file paths.
+    dest_dir : str
+        The destination directory.
+    dim_var : str
+        
+    side : bool
+        
+    top : bool
+        
+    bottom : bool
+        
+    cyl_vert : str
+        The number of cylinder vertices.
+    coord_prec : str
+        The coordinate precision.
+
+    Returns
+    -------
+    None
+    """
     file_list = file_list.get().split('\'')
     files = []
     for i in file_list:
