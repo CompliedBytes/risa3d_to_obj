@@ -368,15 +368,10 @@ def convert(file_list, dest_dir, dim_var, side, top, bottom, cyl_vert, coord_pre
             return
 
         filename = filepath.split('/')[-1]
+
         if ".r3d" in filename:
             filename = filename.strip('.r3d')
-            nodes = []
-            members = []
-            try:
-                nodes, members = r3d.parse_file(filepath)
-            except Exception as e:
-                logging.error(f"Error parsing {filename}: {e}")
-                return
+            nodes, members = r3d.parse_file(filepath)
             for member in members:
                 member.set_views(nodes, get_extreme_coords(nodes))
 
@@ -398,17 +393,12 @@ def convert(file_list, dest_dir, dim_var, side, top, bottom, cyl_vert, coord_pre
             logging.info("File successfully converted")
             logging.info("Starting write process...")
             
-            
-
         else:
             logging.error("invalid file type")
             return
     folder_path = os.path.realpath(dest_dir.get())
     os.startfile(folder_path)
     return
-
-
-
 
 
 def main()->None:
