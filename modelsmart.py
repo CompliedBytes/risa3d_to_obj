@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-import numpy as np
+import logging
 
 class ModelSmartFile:
     def __init__(self,file_version: int,
@@ -247,6 +247,6 @@ def parse_file(file_name):
 
     set_member_dimensions(members, shapes)
 
-    print("modelsmart file parsed")
+    logging.info("modelsmart file parsed")
     return joints, members, shapes
         
