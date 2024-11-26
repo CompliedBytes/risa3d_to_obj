@@ -212,38 +212,48 @@ def parse_file(file_name):
     joints = []
     members = []
     shapes = []
-    with open(file_name,'r') as file:
-        file_type=file.readline().strip()
-        file_version=file.readline().strip()
-        data = file.readline().strip()
-        data = data.strip().split(" ")
-        model_file = ModelSmartFile(file_version,
-                                    int(data[0]),
-                                    int(data[1]),
-                                    int(data[2]),
-                                    int(data[3]),
-                                    int(data[4]))
-        
-        for i in range(model_file.num_joints):
-            joint = process_joint(file.readline().strip())
-            joints.append(joint)
+    try:
+        with open(file_name,'r') as file:
+            file_type=file.readline().strip()
+            file_version=file.readline().strip()
+            data = file.readline().strip()
+            data = data.strip().split(" ")
+            model_file = ModelSmartFile(file_version,
+                                        int(data[0]),
+                                        int(data[1]),
+                                        int(data[2]),
+                                        int(data[3]),
+                                        int(data[4]))
+            
+            for i in range(model_file.num_joints):
+                joint = process_joint(file.readline().strip())
+                joints.append(joint)
 
-        for i in range(model_file.num_members):
-            member = process_member(file.readline().strip())
-            members.append(member)
+            for i in range(model_file.num_members):
+                member = process_member(file.readline().strip())
+                members.append(member)
 
-        #this data is unused skips joint load data
-        for i in range(model_file.num_joints):
-            file.readline()
+            #this data is unused skips joint load data
+            for i in range(model_file.num_joints):
+                file.readline()
 
-        for i in range(model_file.num_shapes):
-            shape_data = []
-            shape_data.append(file.readline().strip())
-            shape_data.append(file.readline().strip())
-            shape_data.append(file.readline().strip())
-            shape_data.append(file.readline().strip())
-            shape = process_shape(shape_data)
-            shapes.append(shape)
+            for i in range(model_file.num_shapes):
+                shape_data = []
+                shape_data.append(file.readline().strip())
+                shape_data.append(file.readline().strip())
+                shape_data.append(file.readline().strip())
+                shape_data.append(file.readline().strip())
+                shape = process_shape(shape_data)
+                shapes.append(shape)
+    except FileNotFoundError:
+        logging.error("File not found")
+        return
+    except PermissionError:
+        logging.error("Permission denied, could not read file")
+        return
+    except Exception as e:
+        logging.error("An unknown error occurred")
+        return
 
     set_member_dimensions(members, shapes)
 
