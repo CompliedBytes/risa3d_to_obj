@@ -328,6 +328,29 @@ def gen_view(members, nodes, filename, view, options):
         return return_arr
     return np.round(all_vertices, decimals=int(options["Prec"])), all_faces, filename + '_' + view
 
+def generate_views(members,nodes,filename,options,dim_var,side,top,bottom):
+    generated_views = []
+    if dim_var.get() == '3D':
+        generated_views.append(gen_view(members, nodes, filename, '3D', options))
+    elif dim_var.get() == 'All':
+        generated_views.append(gen_view(members, nodes, filename, '3D', options))
+        if side.get():
+            generated_views.append(gen_view(members, nodes, filename, 'side1', options))
+            generated_views.append(gen_view(members, nodes, filename, 'side2', options))
+        if top.get():
+            generated_views.append(gen_view(members, nodes, filename, 'top', options))
+        if bottom.get():
+            generated_views.append(gen_view(members, nodes, filename, 'bottom', options))
+    elif dim_var.get() == '2D':
+        if side.get():
+            generated_views.append(gen_view(members, nodes, filename, 'side1', options))
+            generated_views.append(gen_view(members, nodes, filename, 'side2', options))
+        if top.get():
+            generated_views.append(gen_view(members, nodes, filename, 'top' , options))
+        if bottom.get():
+            generated_views.append(gen_view(members, nodes, filename, 'bottom', options))
+    return generated_views
+
 def convert(file_list, dest_dir, dim_var, side, top, bottom, cyl_vert, coord_prec):
     file_list = file_list.get().split('\'')
     files = []
@@ -357,26 +380,7 @@ def convert(file_list, dest_dir, dim_var, side, top, bottom, cyl_vert, coord_pre
             for member in members:
                 member.set_views(nodes, get_extreme_coords(nodes))
 
-            generated_views = []
-            if dim_var.get() == '3D':
-                generated_views.append(gen_view(members, nodes, filename, '3D', options))
-            elif dim_var.get() == 'All':
-                generated_views.append(gen_view(members, nodes, filename, '3D', options))
-                if side.get():
-                    generated_views.append(gen_view(members, nodes, filename, 'side1', options))
-                    generated_views.append(gen_view(members, nodes, filename, 'side2', options))
-                if top.get():
-                    generated_views.append(gen_view(members, nodes, filename, 'top', options))
-                if bottom.get():
-                    generated_views.append(gen_view(members, nodes, filename, 'bottom', options))
-            elif dim_var.get() == '2D':
-                if side.get():
-                    generated_views.append(gen_view(members, nodes, filename, 'side1', options))
-                    generated_views.append(gen_view(members, nodes, filename, 'side2', options))
-                if top.get():
-                    generated_views.append(gen_view(members, nodes, filename, 'top' , options))
-                if bottom.get():
-                    generated_views.append(gen_view(members, nodes, filename, 'bottom', options))
+            generated_views = generate_views(members, nodes, filename, options, dim_var, side, top, bottom)
 
             export_views_to_obj(generated_views, filename, options)
             logging.info("File successfully converted")
@@ -388,27 +392,8 @@ def convert(file_list, dest_dir, dim_var, side, top, bottom, cyl_vert, coord_pre
             for member in members:
                 member.set_views(joints, get_extreme_coords(joints))
 
-            generated_views = []
-            if dim_var.get() == '3D':
-                generated_views.append(gen_view(members, joints, filename, '3D', options))
-            elif dim_var.get() == 'All':
-                generated_views.append(gen_view(members, joints, filename, '3D', options))
-                if side.get():
-                    generated_views.append(gen_view(members, joints, filename, 'side1', options))
-                    generated_views.append(gen_view(members, joints, filename, 'side2', options))
-                if top.get():
-                    generated_views.append(gen_view(members, joints, filename, 'top', options))
-                if bottom.get():
-                    generated_views.append(gen_view(members, joints, filename, 'bottom', options))
-            elif dim_var.get() == '2D':
-                if side.get():
-                    generated_views.append(gen_view(members, joints, filename, 'side1', options))
-                    generated_views.append(gen_view(members, joints, filename, 'side2', options))
-                if top.get():
-                    generated_views.append(gen_view(members, joints, filename, 'top' , options))
-                if bottom.get():
-                    generated_views.append(gen_view(members, joints, filename, 'bottom', options))
-            
+            generated_views = generate_views(members, joints, filename, options, dim_var, side, top, bottom)
+
             export_views_to_obj(generated_views, filename, options)
             logging.info("File successfully converted")
             logging.info("Starting write process...")
