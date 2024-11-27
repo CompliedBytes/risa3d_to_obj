@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import logging
 
-
+# This contains the lists of headers that are parsed in the RISA file
 HEADINGS = ['UNITS', 'NODES','.MEMBERS_MAIN_DATA','SHAPES_LIST']
 END = 'END'
 
@@ -15,7 +15,6 @@ class Node:
     def get_coordinates(self) -> list[float]:
         return [self.x, self.y, self.z]
 
-
 @dataclass
 class Shape:
     name: str
@@ -23,13 +22,7 @@ class Shape:
     thickness: float
     width: float
     radius: float = 0
-
-    def get_coordinates(self) -> list[float]:
-        return [self.x, self.y, self.z]
     
-def clean_dimension_input(dimension):
-    return ''.join(char for char in dimension if char.isdigit() or char == '.' or char == '-')
-
 @dataclass
 class Member:
     label: str
@@ -50,17 +43,6 @@ class Member:
     theta_yz: float = 0
     theta_xz: float = 0
     theta_xy: float = 0
-
-    def __post_init__(self) -> None:
-        dimensions = self.shape_label.upper().split('X')
-        if len(dimensions) == 2:
-            self.radius = float(clean_dimension_input(dimensions[0]))
-        elif len(dimensions) == 3:
-            self.height = float(clean_dimension_input(dimensions[0]))
-            self.width = float(clean_dimension_input(dimensions[1]))
-            self.thickness = float(clean_dimension_input(dimensions[2]))
-        else:
-            logging.warning(f"Dimesions not found for member: {self.label}, shape: {self.shape_label}")
     
     def get_i_coordinates(self,nodes) -> list[float]:
         x,y,z = nodes[self.inode-1].get_coordinates()
@@ -70,7 +52,7 @@ class Member:
         x,y,z = nodes[self.jnode-1].get_coordinates()
         return [x,y,z]
     
-    def set_views(self,nodes: list[Node], extreme_coords: tuple) -> None:
+    def set_views(self,nodes: dict[str,Node], extreme_coords: tuple) -> None:
         ix, iy, iz = nodes[self.inode-1].get_coordinates()
         jx, jy, jz = nodes[self.jnode-1].get_coordinates()
 
@@ -82,11 +64,6 @@ class Member:
             self.views.append('side1')
         if iz == extreme_coords[5] and jz == extreme_coords[5]:
             self.views.append('side2')
-
-# Constants
-BACKGROUND_COLOR = 'lightblue'
-HEADINGS = ['UNITS', 'NODES','.MEMBERS_MAIN_DATA','SHAPES_LIST']
-END = 'END'
 
 def get_units(data) -> dict[str, str]:
     # Unit Format: length_units  dim_units
@@ -119,7 +96,7 @@ def get_units(data) -> dict[str, str]:
 # This function is used to get the nodes from the risa file
 def get_nodes(data) -> list[Node]:
     # Node Format: Name/ID  X coord, Y coord, Z coord
-    nodes = []
+    nodes = {}
     for line in data:
         line = line[1:-2].strip().split('"')
         line[0] = line[0].strip()
@@ -129,12 +106,12 @@ def get_nodes(data) -> list[Node]:
         y = float(line[1])
         z = float(line[2])
         node = Node(label, x, y, z)
-        nodes.append(node)
+        nodes[label] = node
     return nodes
 
 # This function is used to get the memebers from the risa file
-def get_members(data: list[str]) -> list[Member]:
-    members = []
+def get_members(data: list[str]) -> dict[str,Member]:
+    members = {}
     for line in data:
         line = line[1:-2].strip().split('"')
         for i,s in enumerate(line):
@@ -156,7 +133,7 @@ def get_members(data: list[str]) -> list[Member]:
         views = ['3D']
 
         member = Member(label, design_list, shape_label, views, inode, jnode, knode, rotation, offset, material)
-        members.append(member)
+        members[label] = member
     return members
 
 def get_shapes_list(data: list[str]) -> dict[str, Shape]:
@@ -181,8 +158,11 @@ def get_shapes_list(data: list[str]) -> dict[str, Shape]:
 
     return shapes
 
-def set_member_dimensions(members: list[Member], shapes: dict[str, Shape]) -> None:
-    for member in members:
+def clean_dimension_input(dimension):
+    return ''.join(char for char in dimension if char.isdigit() or char == '.' or char == '-')
+
+def set_member_dimensions(members: dict[str,Member], shapes: dict[str, Shape]) -> None:
+    for member in members.values():
         if member.shape_label in shapes:
             shape: Shape = shapes[member.shape_label]
             member.height = shape.height
@@ -190,13 +170,18 @@ def set_member_dimensions(members: list[Member], shapes: dict[str, Shape]) -> No
             member.thickness = shape.thickness
             member.radius = shape.radius
         else:
-            logging.error(f"Shape not found: {member.shape_label}")
-
+            logging.warning(f"Shape not found: {member.shape_label}, attempting to parse dimensions from label")
+            dimensions = member.shape_label.upper().split('X')
+            if len(dimensions) == 2:
+                member.radius = float(clean_dimension_input(dimensions[0]))
+            elif len(dimensions) == 3:
+                member.height = float(clean_dimension_input(dimensions[0]))
+                member.width = float(clean_dimension_input(dimensions[1]))
+                member.thickness = float(clean_dimension_input(dimensions[2]))
+            else:
+                logging.error(f"Dimesions could not be parsed: {member.label}, shape: {member.shape_label}")
 
 def parse_file(filename):
-    nodes = []
-    members = []
-    shapes = []
     try:
         with open(filename, 'r') as file:
             for line in file:
@@ -233,6 +218,6 @@ def parse_file(filename):
         return
     
     set_member_dimensions(members, shapes)
-
-    logging.info("RISA file parsed")
+    logging.info(f"units: {units}")
+    logging.info(f"RISA file \"{filename}\" parsed")
     return nodes, members
