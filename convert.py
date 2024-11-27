@@ -396,9 +396,10 @@ def gen_view(members, nodes, filename, view, options):
     all_faces = []
     vertex_count = 0
 
-    for member in members.values():
-        ix, iy, iz = r3d.get_node_coordinates(nodes, member.inode)
-        jx, jy, jz = r3d.get_node_coordinates(nodes, member.jnode)
+    # modelsmart files
+    for member in members:
+        ix, iy, iz = ms.get_joint_coordinates(nodes, member.start_joint)
+        jx, jy, jz = ms.get_joint_coordinates(nodes, member.end_joint)
         if(member.radius == 0):
             corners, faces = gen_rect_face_vertices([ix,iy,iz], [jx,jy,jz], member.rotation, member.width, member.height)
         else:
@@ -408,6 +409,22 @@ def gen_view(members, nodes, filename, view, options):
         all_vertices.extend(corners)
         all_faces.extend(faces)
         vertex_count += corners.__len__()
+
+    # risa3d files
+    #for member in members.values():
+    #    ix, iy, iz = r3d.get_node_coordinates(nodes, member.inode)
+    #    jx, jy, jz = r3d.get_node_coordinates(nodes, member.jnode)
+    #    if(member.radius == 0):
+    #        corners, faces = gen_rect_face_vertices([ix,iy,iz], [jx,jy,jz], member.rotation, member.width, member.height)
+    #    else:
+    #        corners, faces = gen_circ_face_vertices([ix,iy,iz],[jx,jy,jz],member.radius,options)
+#
+    #    faces = [[vertex_count +idx for idx in face] for face in faces]
+    #    all_vertices.extend(corners)
+    #    all_faces.extend(faces)
+    #    vertex_count += corners.__len__()
+
+
     if len(all_vertices) == 0:
         logging.error("No members found for gen_view")
         return_arr = ["No members found for ", filename + '_' + view]
@@ -522,8 +539,8 @@ def convert(file_list, dest_dir, dim_var, side, top, bottom, cyl_vert, coord_pre
         elif ".3dd" in filename:
             filename = filename.strip('.3dd')
             joints, members = ms.parse_file(filepath)
-            for member in members:
-                member.set_views(joints, get_extreme_coords(joints))
+            #for member in members:
+            #    member.set_views(joints, get_extreme_coords(joints))
 
             generated_views = generate_views(members, joints, filename, options, dim_var, side, top, bottom)
 

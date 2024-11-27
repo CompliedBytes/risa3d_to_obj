@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import List
 import logging
 
 class ModelSmartFile:
@@ -47,9 +48,6 @@ class Joint:
             f"rot_x={self.rot_x:.3f}, rot_y={self.rot_y:.3f}, rot_z={self.rot_z:.3f}, "
             f"joint_type={self.joint_type!r}, sub_type={self.sub_type!r})"
         )
-    
-    def get_coordinates(self) -> list[float]:
-        return [self.x,self.y,self.z]
 
 @dataclass
 class Member:
@@ -74,13 +72,9 @@ class Member:
     memb_color_red: float 
     memb_color_green: float
     memb_color_blue: float
-    views: list[str] = None
     radius: float = 0
     height: float = 0
     width: float = 0
-
-    def __post_init__(self) -> None:
-        self.views = ['3D']
 
     def __repr__(self):
         return (
@@ -93,31 +87,6 @@ class Member:
             f"fix_my2={self.fix_my2!r}, fix_mz2={self.fix_mz2!r}, memb_color_red={self.memb_color_red}, "
             f"memb_color_green={self.memb_color_green}, memb_color_blue={self.memb_color_blue})"
         )
-    
-    def get_i_coordinates(self,joints) -> list[float]:
-        x = joints[self.start_joint-1].x
-        y = joints[self.start_joint-1].y
-        z = joints[self.start_joint-1].z
-        return [x,y,z]
-    
-    def get_j_coordinates(self,joints) -> list[float]:
-        x = joints[self.end_joint-1].x
-        y = joints[self.end_joint-1].y
-        z = joints[self.end_joint-1].z
-        return [x,y,z]
-    
-    def set_views(self,joints: list[Joint], extreme_coords: tuple) -> None:
-        ix, iy, iz = joints[self.start_joint-1].get_coordinates()
-        jx, jy, jz = joints[self.end_joint-1].get_coordinates()
-
-        if iy == extreme_coords[4] and jy == extreme_coords[4]:
-            self.views.append('top')
-        if iy == extreme_coords[1] and jy == extreme_coords[1]:
-            self.views.append('bottom')
-        if iz == extreme_coords[2] and jz == extreme_coords[2]:
-            self.views.append('side1')
-        if iz == extreme_coords[5] and jz == extreme_coords[5]:
-            self.views.append('side2')
 
 @dataclass
 class Shape:
@@ -181,8 +150,6 @@ def process_member(member_data: str) -> Member:
                   memb_color_red=float(data[18]),
                   memb_color_green=float(data[19]),
                   memb_color_blue=float(data[20]))
-    
-
 
 def process_shape(shape_data: list[str]) -> Shape:
         data1 = shape_data[2].strip().split(" ")
@@ -201,12 +168,30 @@ def process_shape(shape_data: list[str]) -> Shape:
                      float(data2[4]),
                      float(data2[5]))
 
-
 def set_member_dimensions(members: list[Member], shapes: dict[str, Shape]) -> None:
     for member in members:
         shape = shapes[member.shape_no-1]
         member.height = shape.height
         member.width = shape.width
+
+def get_joint_coordinates(joints_list: List[Joint], index:int) -> List[float]:
+    """
+    This function is used to get the coordinates of a joint in the Modelsmart file
+
+    Parameters
+    ----------
+    nodes_list : List[Joint]
+        The list of joint from the Modelsmart file
+    index : int
+        The index of the joint in the list
+
+    Returns
+    -------
+    List[float]
+        The coordinates of the joint
+    """
+    joint = joints_list[index-1]
+    return [joint.x, joint.y, joint.z]
 
 def parse_file(file_name):
     joints = []
