@@ -39,7 +39,30 @@ def setup_logging() -> None:
 setup_logging()
 logging.info("Logging setup complete.")
     
-def get_extreme_coords(items: dict[str,Union[r3d.Node,ms.Joint]]) -> tuple[float, float, float, float, float, float]:
+
+@dataclass(frozen=True)
+class Vertex:
+    x: float
+    y: float
+    z: float
+
+    def to_list(self) -> list[float]:
+        return [self.x, self.y, self.z]
+    
+@dataclass
+class Face:
+    vertices: list[int]
+
+    def to_list(self) -> list[int]:
+        return self.vertices
+    
+@dataclass
+class Mesh:
+    vertices: list[Vertex]
+    faces: list[Face]
+
+
+def get_extreme_coords(items: list) -> tuple[float, float, float, float, float, float]:
     """
     Finds the extreme x, y, and z coordinates from a list of Node or Joint instances.
     Will work with any object that has x, y, and z attributes.
@@ -54,13 +77,13 @@ def get_extreme_coords(items: dict[str,Union[r3d.Node,ms.Joint]]) -> tuple[float
     tuple[float, float, float, float, float, float]
         The minimum and maximum x, y, z coordinates.
     """
-    min_x = min([item.x for item in items]) 
-    min_y = min([item.y for item in items])
-    min_z = min([item.z for item in items])
+    min_x = min(item.x for item in items) 
+    min_y = min(item.y for item in items)
+    min_z = min(item.z for item in items)
 
-    max_x = max([item.x for item in items])
-    max_y = max([item.y for item in items])
-    max_z = max([item.z for item in items])
+    max_x = max(item.x for item in items)
+    max_y = max(item.y for item in items)
+    max_z = max(item.z for item in items)
 
 
     return min_x, min_y, min_z, max_x, max_y, max_z
@@ -388,97 +411,33 @@ def export_views_to_obj(generated_views, srcfilename, options):
         else:
             logging.error(f"{view[0]}{view[1]}.")
 
-def gen_view(members, nodes, filename, view, options):
-    # this technially "works" with modelsmart files but
-    # needs to be fixed so that it is really modular
-    logging.info(f"Generating {view} view")
-    all_vertices =[]
-    all_faces = []
-    vertex_count = 0
-
-    # modelsmart files
-    for member in members:
-        ix, iy, iz = ms.get_joint_coordinates(nodes, member.start_joint)
-        jx, jy, jz = ms.get_joint_coordinates(nodes, member.end_joint)
-        if(member.radius == 0):
-            corners, faces = gen_rect_face_vertices([ix,iy,iz], [jx,jy,jz], member.rotation, member.width, member.height)
-        else:
-            corners, faces = gen_circ_face_vertices([ix,iy,iz],[jx,jy,jz],member.radius,options)
-
-        faces = [[vertex_count +idx for idx in face] for face in faces]
-        all_vertices.extend(corners)
-        all_faces.extend(faces)
-        vertex_count += corners.__len__()
-
-    # risa3d files
-    #for member in members.values():
-    #    ix, iy, iz = r3d.get_node_coordinates(nodes, member.inode)
-    #    jx, jy, jz = r3d.get_node_coordinates(nodes, member.jnode)
-    #    if(member.radius == 0):
-    #        corners, faces = gen_rect_face_vertices([ix,iy,iz], [jx,jy,jz], member.rotation, member.width, member.height)
-    #    else:
-    #        corners, faces = gen_circ_face_vertices([ix,iy,iz],[jx,jy,jz],member.radius,options)
-#
-    #    faces = [[vertex_count +idx for idx in face] for face in faces]
-    #    all_vertices.extend(corners)
-    #    all_faces.extend(faces)
-    #    vertex_count += corners.__len__()
-
-
-    if len(all_vertices) == 0:
-        logging.error("No members found for gen_view")
-        return_arr = ["No members found for ", filename + '_' + view]
-        return return_arr
-    return np.round(all_vertices, decimals=int(options["Prec"])), all_faces, filename + '_' + view
-
-def generate_views(members,nodes,filename,options,dim_var,side,top,bottom):
+def is_viewable(i_coords: list[float], j_coords: list[float], view:str, extreme_coords:tuple[float, float, float, float, float, float]) -> bool:
     """
-    Generate the views for the members and nodes.
+    Check if a member is viewable in the specified view.
 
     Parameters
     ----------
-    members : list[Member]
-        A list of Member instances.
-    nodes : list[Node]
-        A list of Node instances.
-    filename : str
-        The name of the file.
-    options : dict
-        A dictionary containing the user options from the GUI.
-    dim_var : str
-
-    side : bool
-
-    top : bool
-
-    bottom : bool
+    member : Member
+        The member to check.
+    view : str
+        The view to check.
+    extreme_coords : tuple[float, float, float, float, float, float]
+        The minimum and maximum x, y, z coordinates.
 
     Returns
     -------
-    list
-        A list of the generated views.
+    bool
+        True if the member is viewable, False otherwise.
     """
-    generated_views = []
-    if dim_var.get() == '3D':
-        generated_views.append(gen_view(members, nodes, filename, '3D', options))
-    elif dim_var.get() == 'All':
-        generated_views.append(gen_view(members, nodes, filename, '3D', options))
-        if side.get():
-            generated_views.append(gen_view(members, nodes, filename, 'side1', options))
-            generated_views.append(gen_view(members, nodes, filename, 'side2', options))
-        if top.get():
-            generated_views.append(gen_view(members, nodes, filename, 'top', options))
-        if bottom.get():
-            generated_views.append(gen_view(members, nodes, filename, 'bottom', options))
-    elif dim_var.get() == '2D':
-        if side.get():
-            generated_views.append(gen_view(members, nodes, filename, 'side1', options))
-            generated_views.append(gen_view(members, nodes, filename, 'side2', options))
-        if top.get():
-            generated_views.append(gen_view(members, nodes, filename, 'top' , options))
-        if bottom.get():
-            generated_views.append(gen_view(members, nodes, filename, 'bottom', options))
-    return generated_views
+    if i_coords[1] == extreme_coords[4] and j_coords[1] == extreme_coords[4] and view == 'top':
+        return True
+    if i_coords[1] == extreme_coords[1] and j_coords[1] == extreme_coords[1] and view == 'bottom':
+        return True
+    if i_coords[2] == extreme_coords[2] and j_coords[2] == extreme_coords[2] and view == 'side1':
+        return True
+    if i_coords[2] == extreme_coords[5] and j_coords[2] == extreme_coords[5] and view == 'side2':
+        return True
+    return False
 
 def convert(file_list, dest_dir, dim_var, side, top, bottom, cyl_vert, coord_prec):
     """
@@ -527,24 +486,25 @@ def convert(file_list, dest_dir, dim_var, side, top, bottom, cyl_vert, coord_pre
         if ".r3d" in filename:
             filename = filename.strip('.r3d')
             nodes, members = r3d.parse_file(filepath)
-            #for member in members.values():
-            #    member.set_views(nodes, get_extreme_coords(nodes))
+            for member in members.values():
+                i_nodes = r3d.get_node_coordinates(nodes, member.inode)
+                j_nodes = r3d.get_node_coordinates(nodes, member.jnode)
+                if member.radius == 0:
+                    corners, faces = gen_rect_face_vertices(i_nodes, j_nodes, member.rotation, member.width, member.height)
 
-            generated_views = generate_views(members, nodes, filename, options, dim_var, side, top, bottom)
 
-            export_views_to_obj(generated_views, filename, options)
+
+
+                
             logging.info("File successfully converted")
             logging.info("Starting write process...")
     
         elif ".3dd" in filename:
             filename = filename.strip('.3dd')
             joints, members = ms.parse_file(filepath)
-            #for member in members:
-            #    member.set_views(joints, get_extreme_coords(joints))
 
-            generated_views = generate_views(members, joints, filename, options, dim_var, side, top, bottom)
 
-            export_views_to_obj(generated_views, filename, options)
+
             logging.info("File successfully converted")
             logging.info("Starting write process...")
             
