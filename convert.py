@@ -39,7 +39,7 @@ def setup_logging() -> None:
 setup_logging()
 logging.info("Logging setup complete.")
     
-def get_extreme_coords(items: List[Union[r3d.Node,ms.Joint]]) -> tuple[float, float, float, float, float, float]:
+def get_extreme_coords(items: dict[str,Union[r3d.Node,ms.Joint]]) -> tuple[float, float, float, float, float, float]:
     """
     Finds the extreme x, y, and z coordinates from a list of Node or Joint instances.
     Will work with any object that has x, y, and z attributes.
@@ -396,22 +396,18 @@ def gen_view(members, nodes, filename, view, options):
     all_faces = []
     vertex_count = 0
 
-    for member in members:
-        if view in member.views:
-            if(member.radius == 0):
-                ix, iy, iz = member.get_i_coordinates(nodes)
-                jx, jy, jz = member.get_j_coordinates(nodes)
+    for member in members.values():
+        ix, iy, iz = r3d.get_node_coordinates(nodes, member.inode)
+        jx, jy, jz = r3d.get_node_coordinates(nodes, member.jnode)
+        if(member.radius == 0):
+            corners, faces = gen_rect_face_vertices([ix,iy,iz], [jx,jy,jz], member.rotation, member.width, member.height)
+        else:
+            corners, faces = gen_circ_face_vertices([ix,iy,iz],[jx,jy,jz],member.radius,options)
 
-                corners, faces = gen_rect_face_vertices([ix,iy,iz], [jx,jy,jz], member.rotation, member.width, member.height)
-            else:
-                ix, iy, iz = member.get_i_coordinates(nodes)
-                jx, jy, jz = member.get_j_coordinates(nodes)
-                corners, faces = gen_circ_face_vertices([ix,iy,iz],[jx,jy,jz],member.radius,options)
-
-            faces = [[vertex_count +idx for idx in face] for face in faces]
-            all_vertices.extend(corners)
-            all_faces.extend(faces)
-            vertex_count += corners.__len__()
+        faces = [[vertex_count +idx for idx in face] for face in faces]
+        all_vertices.extend(corners)
+        all_faces.extend(faces)
+        vertex_count += corners.__len__()
     if len(all_vertices) == 0:
         logging.error("No members found for gen_view")
         return_arr = ["No members found for ", filename + '_' + view]
@@ -514,8 +510,8 @@ def convert(file_list, dest_dir, dim_var, side, top, bottom, cyl_vert, coord_pre
         if ".r3d" in filename:
             filename = filename.strip('.r3d')
             nodes, members = r3d.parse_file(filepath)
-            for member in members:
-                member.set_views(nodes, get_extreme_coords(nodes))
+            #for member in members.values():
+            #    member.set_views(nodes, get_extreme_coords(nodes))
 
             generated_views = generate_views(members, nodes, filename, options, dim_var, side, top, bottom)
 
