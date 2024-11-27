@@ -102,9 +102,8 @@ def get_members(data: list[str]) -> dict[str,Member]:
         rotation = float(temp[3])
         offset = int(temp[4])
         material = int(temp[7])
-        views = ['3D']
 
-        member = Member(design_list, shape_label, views, inode, jnode, knode, rotation, offset, material)
+        member = Member(design_list, shape_label, inode, jnode, knode, rotation, offset, material)
         members[label] = member
     return members
 
