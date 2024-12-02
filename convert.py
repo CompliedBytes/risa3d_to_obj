@@ -59,7 +59,20 @@ class Face:
 @dataclass
 class Mesh:
     vertices: list[Vertex]
-    faces: list[Face]
+    faces: list[Face] 
+
+    def add_vertex(self, vertex: Vertex) -> None:
+        self.vertices.append(vertex)
+    
+    def add_face(self, face: Face) -> None:
+        self.faces.append(face)
+
+    def to_obj(self,filename:str) -> None:
+        with open(filename, 'w') as obj_file:
+            for vertex in self.vertices:
+                obj_file.write(f"v {vertex.x} {vertex.y} {vertex.z}\n")
+            for face in self.faces:
+                obj_file.write(f"f {' '.join(map(str, face.vertices))}\n")
 
 
 def get_extreme_coords(items: list) -> tuple[float, float, float, float, float, float]:
@@ -203,7 +216,7 @@ def generate_face_vectors(i_coords: list[float], j_coords: list[float], rotation
 
     return dir_vec, v1, v2
 
-def gen_rect_face_vertices(i_coords: list[float], j_coords: list[float], rotation, width, height) -> np.array:
+def gen_rect_mesh(i_coords: list[float], j_coords: list[float], rotation, width, height) -> Mesh:
     """
     Generate the vertices of a rectangular face. 
     Assuming the coordinates are 3 dimensional.
@@ -234,7 +247,8 @@ def gen_rect_face_vertices(i_coords: list[float], j_coords: list[float], rotatio
     half_height_vec = height / 2 * v2
 
     # Create the four corners of the face
-    corners = [
+
+    verticies = [
         i_vec + half_width_vec + half_height_vec,
         i_vec - half_width_vec + half_height_vec,
         i_vec - half_width_vec - half_height_vec,
@@ -246,6 +260,9 @@ def gen_rect_face_vertices(i_coords: list[float], j_coords: list[float], rotatio
         j_vec + half_width_vec - half_height_vec
     ]
 
+    vertex_list = [Vertex(float(v[0]), float(v[1]), float(v[2])) for v in verticies]
+
+
     faces = [
         [1, 2, 3, 4],  # Bottom face
         [5, 6, 7, 8],  # Top face
@@ -255,9 +272,11 @@ def gen_rect_face_vertices(i_coords: list[float], j_coords: list[float], rotatio
         [4, 1, 5, 8]   # Side face
     ]
 
-    return corners, faces
+    face_list = [Face(f) for f in faces]
 
-def gen_circ_face_vertices(i_coords: list[float], j_coords: list[float], radius:float, options):
+    return Mesh(vertex_list, face_list)
+
+def gen_circ_face_vertices(i_coords: list[float], j_coords: list[float], radius:float, options) -> Mesh:
     """
     Generate the vertices of a circular face.
     Assuming the coordinates are 3 dimensional.
@@ -300,6 +319,8 @@ def gen_circ_face_vertices(i_coords: list[float], j_coords: list[float], radius:
     for i in range(1, circle_size):
         corners.append(j_vec + np.cos(i*arc_deg)*half_width_vect + np.sin(i*arc_deg)*half_height_vect)
 
+    vertex_list = [Vertex(float(v[0]), float(v[1]), float(v[2])) for v in corners]
+
     faces = []
     # Create the i-node meshes
     for i in range(2, circle_size+1):
@@ -323,8 +344,11 @@ def gen_circ_face_vertices(i_coords: list[float], j_coords: list[float], radius:
             faces.append([2, i, circle_size+3])
         else:
             faces.append([i-circle_size, i, i+1])
+    face_list = [Face(f) for f in faces]
 
-    return corners, faces
+    mesh = Mesh(vertex_list, face_list)
+
+    return mesh
 
 def create_folder(dest_dir, filename, subs_flag):
     """
@@ -439,6 +463,20 @@ def is_viewable(i_coords: list[float], j_coords: list[float], view:str, extreme_
         return True
     return False
 
+def combine_meshes(meshes: dict[str, Mesh]) -> Mesh:
+    all_vertices = []
+    all_faces = []
+    vertex_offset = 0
+
+    for label, mesh in meshes.items():
+        all_vertices.extend(mesh.vertices)
+        for face in mesh.faces:
+            adjusted_face = [idx + vertex_offset for idx in face.vertices]
+            all_faces.append(Face(adjusted_face))
+
+        vertex_offset += len(mesh.vertices)
+    return Mesh(all_vertices, all_faces)
+
 def convert(file_list, dest_dir, dim_var, side, top, bottom, cyl_vert, coord_prec):
     """
     Convert the selected file(s) to OBJ format.
@@ -482,20 +520,23 @@ def convert(file_list, dest_dir, dim_var, side, top, bottom, cyl_vert, coord_pre
             return
 
         filename = filepath.split('/')[-1]
-
+        meshes = {}
         if ".r3d" in filename:
             filename = filename.strip('.r3d')
             nodes, members = r3d.parse_file(filepath)
-            for member in members.values():
+            for label,member in members.items():
                 i_nodes = r3d.get_node_coordinates(nodes, member.inode)
                 j_nodes = r3d.get_node_coordinates(nodes, member.jnode)
                 if member.radius == 0:
-                    corners, faces = gen_rect_face_vertices(i_nodes, j_nodes, member.rotation, member.width, member.height)
+                    obj_mesh = gen_rect_mesh(i_nodes, j_nodes, member.rotation, member.width, member.height)
+                    meshes[label] = obj_mesh
+                else:
+                    obj_mesh = gen_circ_face_vertices(i_nodes, j_nodes, member.radius, options)
+                    meshes[label] = obj_mesh
 
+            combined_mesh = combine_meshes(meshes)
+            combined_mesh.to_obj("full_mesh.obj")
 
-
-
-                
             logging.info("File successfully converted")
             logging.info("Starting write process...")
     
@@ -503,7 +544,18 @@ def convert(file_list, dest_dir, dim_var, side, top, bottom, cyl_vert, coord_pre
             filename = filename.strip('.3dd')
             joints, members = ms.parse_file(filepath)
 
-
+            for member in members:
+                i_joints = ms.get_joint_coordinates(joints, member.start_joint)
+                j_joints = ms.get_joint_coordinates(joints, member.end_joint)
+                if member.radius == 0:
+                    obj_mesh = gen_rect_mesh(i_joints, j_joints, member.rotation, member.width, member.height)
+                    meshes[member.memb_no] = obj_mesh
+                else:
+                    obj_mesh = gen_circ_face_vertices(i_joints, j_joints, member.radius, options)
+                    meshes[label] = obj_mesh
+                
+            combined_mesh = combine_meshes(meshes)
+            combined_mesh.to_obj("full_mesh.obj")
 
             logging.info("File successfully converted")
             logging.info("Starting write process...")
