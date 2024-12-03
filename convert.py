@@ -418,7 +418,7 @@ def gen_view(members, nodes, filename, view, options):
         return return_arr
     return np.round(all_vertices, decimals=int(options["Prec"])), all_faces, filename + '_' + view
 
-def generate_views(members,nodes,filename,options,dim_var,side,top,bottom):
+def generate_views(members,nodes,filename,options,dim_var,X,Y,Z):
     """
     Generate the views for the members and nodes.
 
@@ -450,24 +450,28 @@ def generate_views(members,nodes,filename,options,dim_var,side,top,bottom):
         generated_views.append(gen_view(members, nodes, filename, '3D', options))
     elif dim_var.get() == 'All':
         generated_views.append(gen_view(members, nodes, filename, '3D', options))
-        if side.get():
-            generated_views.append(gen_view(members, nodes, filename, 'side1', options))
-            generated_views.append(gen_view(members, nodes, filename, 'side2', options))
-        if top.get():
-            generated_views.append(gen_view(members, nodes, filename, 'top', options))
-        if bottom.get():
-            generated_views.append(gen_view(members, nodes, filename, 'bottom', options))
+        if X.get():
+            generated_views.append(gen_view(members, nodes, filename, 'X1', options))
+            generated_views.append(gen_view(members, nodes, filename, 'X2', options))
+        if Y.get():
+            generated_views.append(gen_view(members, nodes, filename, 'Y1', options))
+            generated_views.append(gen_view(members, nodes, filename, 'Y2', options))
+        if Z.get():
+            generated_views.append(gen_view(members, nodes, filename, 'Z1', options))
+            generated_views.append(gen_view(members, nodes, filename, 'Z2', options))
     elif dim_var.get() == '2D':
-        if side.get():
-            generated_views.append(gen_view(members, nodes, filename, 'side1', options))
-            generated_views.append(gen_view(members, nodes, filename, 'side2', options))
-        if top.get():
-            generated_views.append(gen_view(members, nodes, filename, 'top' , options))
-        if bottom.get():
-            generated_views.append(gen_view(members, nodes, filename, 'bottom', options))
+        if X.get():
+            generated_views.append(gen_view(members, nodes, filename, 'X1', options))
+            generated_views.append(gen_view(members, nodes, filename, 'X2', options))
+        if Y.get():
+            generated_views.append(gen_view(members, nodes, filename, 'Y1', options))
+            generated_views.append(gen_view(members, nodes, filename, 'Y2', options))
+        if Z.get():
+            generated_views.append(gen_view(members, nodes, filename, 'Z1', options))
+            generated_views.append(gen_view(members, nodes, filename, 'Z2', options))
     return generated_views
 
-def convert(file_list, dest_dir, dim_var, side, top, bottom, cyl_vert, coord_prec):
+def convert(file_list, dest_dir, dim_var, X, Y, Z, cyl_vert, coord_prec):
     """
     Convert the selected file(s) to OBJ format.
 
@@ -517,7 +521,7 @@ def convert(file_list, dest_dir, dim_var, side, top, bottom, cyl_vert, coord_pre
             for member in members:
                 member.set_views(nodes, get_extreme_coords(nodes))
 
-            generated_views = generate_views(members, nodes, filename, options, dim_var, side, top, bottom)
+            generated_views = generate_views(members, nodes, filename, options, dim_var, X, Y, Z)
 
             export_views_to_obj(generated_views, filename, options)
             logging.info("File successfully converted")
@@ -529,7 +533,7 @@ def convert(file_list, dest_dir, dim_var, side, top, bottom, cyl_vert, coord_pre
             for member in members:
                 member.set_views(joints, get_extreme_coords(joints))
 
-            generated_views = generate_views(members, joints, filename, options, dim_var, side, top, bottom)
+            generated_views = generate_views(members, joints, filename, options, dim_var, X, Y, Z)
 
             export_views_to_obj(generated_views, filename, options)
             logging.info("File successfully converted")
@@ -591,13 +595,13 @@ def main()->None:
         # 2D View Options Section.
         dim_options_label = ttk.Label(advframe, text="Advanced 2D Options", foreground="black")
         dim_options_frame = ttk.Frame(advframe)
-        side_button = ttk.Checkbutton(dim_options_frame, text="Side", variable=side, onvalue=True, offvalue=False)
-        top_button = ttk.Checkbutton(dim_options_frame, text="Top", variable=top, onvalue=True, offvalue=False)
-        bottom_button = ttk.Checkbutton(dim_options_frame, text="Bottom", variable=bottom, onvalue=True, offvalue=False)
+        X_button = ttk.Checkbutton(dim_options_frame, text="X", variable=X_var, onvalue=True, offvalue=False)
+        Y_button = ttk.Checkbutton(dim_options_frame, text="Y", variable=Y_var, onvalue=True, offvalue=False)
+        Z_button = ttk.Checkbutton(dim_options_frame, text="Z", variable=Z_var, onvalue=True, offvalue=False)
         dim_options_label.grid(column=0, row=1, padx=(0,0), pady=(5,0))
-        side_button.grid(column=0, row=0, padx=(10,10))
-        top_button.grid(column=1, row=0, padx=(10,10))
-        bottom_button.grid(column=2, row=0, padx=(10,0))
+        X_button.grid(column=0, row=0, padx=(10,5))
+        Y_button.grid(column=1, row=0, padx=(5,5))
+        Z_button.grid(column=2, row=0, padx=(5,0))
         dim_options_frame.grid(column=0, row=2, padx=(0,0), pady=(5,6))
         ToolTip(dim_options_label, msg="Specify which 2D views you'd like generated.\nDefault is all of them.", delay=0.5)
 
@@ -647,9 +651,9 @@ def main()->None:
     
     file = StringVar(value=[])
     dim_var = StringVar(value='All')
-    side = BooleanVar(value=True)
-    top = BooleanVar(value=True)
-    bottom = BooleanVar(value=True)
+    X_var = BooleanVar(value=True)
+    Y_var = BooleanVar(value=True)
+    Z_var = BooleanVar(value=True)
     cyl_vert = StringVar(value="16")
     coord_prec = StringVar(value="3")
     dest_dir = StringVar(value=os.getcwd())
@@ -691,7 +695,7 @@ def main()->None:
 
     bottom_frame = ttk.Frame(mainframe)
     advanced_button = ttk.Button(bottom_frame, text="Advanced", command = lambda: Advanced_Settings(), width=10)
-    convert_button = ttk.Button(bottom_frame, text="Convert", command =lambda: convert(file, dest_dir, dim_var, side, top, bottom, cyl_vert, coord_prec), width=9)
+    convert_button = ttk.Button(bottom_frame, text="Convert", command =lambda: convert(file, dest_dir, dim_var, X_var, Y_var, Z_var, cyl_vert, coord_prec), width=9)
     exit_button = ttk.Button(bottom_frame, text="Exit", command=root.destroy, width=5)
     advanced_button.grid(column=0, row=0, padx=(0,20), pady=(0,0), sticky=W)
     convert_button.grid(column=1, row=0, padx=(20,20), pady=(0,0))

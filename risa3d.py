@@ -74,14 +74,18 @@ class Member:
         ix, iy, iz = nodes[self.inode-1].get_coordinates()
         jx, jy, jz = nodes[self.jnode-1].get_coordinates()
 
-        if iy == extreme_coords[4] and jy == extreme_coords[4]:
-            self.views.append('top')
+        if ix == extreme_coords[0] and jx == extreme_coords[0]:
+            self.views.append('X1')
+        if ix == extreme_coords[3] and jx == extreme_coords[3]:
+            self.views.append('X2')
         if iy == extreme_coords[1] and jy == extreme_coords[1]:
-            self.views.append('bottom')
+            self.views.append('Y1')
+        if iy == extreme_coords[4] and jy == extreme_coords[4]:
+            self.views.append('Y2')
         if iz == extreme_coords[2] and jz == extreme_coords[2]:
-            self.views.append('side1')
+            self.views.append('Z1')
         if iz == extreme_coords[5] and jz == extreme_coords[5]:
-            self.views.append('side2')
+            self.views.append('Z2')
 
 # Constants
 BACKGROUND_COLOR = 'lightblue'
