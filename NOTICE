@@ -1,0 +1,15 @@
+NOTICE
+
+This project includes third-party software:
+
+1. **NumPy**
+   - Licensed under the BSD 3-Clause License.
+   - NumPy is a library for numerical computing in Python.
+   - For more information, see: https://numpy.org/doc/stable/license.html
+
+2. **tkinter-tooltip**
+   - Licensed under the MIT License.
+   - tkinter-tooltip provides an easy way to add tooltips to tkinter GUI components.
+   - For more information, see: https://pypi.org/project/tkinter-tooltip/
+
+These libraries are used in compliance with their respective licenses. For the full license text of this project, see the LICENSE file.
