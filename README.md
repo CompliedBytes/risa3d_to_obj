@@ -26,10 +26,10 @@ This tool is used to convert structural software files to .obj. The two supporte
 2. Install the dependencies | pip install -r requirements.txt
 
 ## Usage
-Current tested versions of RISA-3D
+### Current tested versions of RISA-3D
 - 20.0501
 - 22.01000
-Current tested version of Modelsmart 3D
+### Current tested version of Modelsmart 3D
 - Version 4
 
 ### Executable file.
