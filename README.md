@@ -21,6 +21,11 @@ This tool is used to convert structural software files to .obj. The two supporte
 ### Executable File.
 1. Run the executable.
 
+### Batch File.
+1. Install python.
+2. Clone the repository.
+3. Run the batch script.
+
 ### Source Files.
 1. Clone the repository.
 2. Install the dependencies | pip install -r requirements.txt
@@ -32,8 +37,15 @@ This tool is used to convert structural software files to .obj. The two supporte
 ### Current tested version of Modelsmart 3D
 - Version 4
 
-### Executable file.
+### Executable File.
 1. Run the executable.
+2. Select your input file(s).
+3. Select your desination folder.
+4. Choose any extra options.
+5. Select convert.
+
+### Batch File.
+1. Run the batch file.
 2. Select your input file(s).
 3. Select your desination folder.
 4. Choose any extra options.
