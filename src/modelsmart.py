@@ -111,17 +111,17 @@ class Member:
         jx, jy, jz = joints[self.end_joint-1].get_coordinates()
 
         if ix == extreme_coords[0] and jx == extreme_coords[0]:
-            self.views.append('X1')
+            self.views.append('YZ_1')
         if ix == extreme_coords[3] and jx == extreme_coords[3]:
-            self.views.append('X2')
+            self.views.append('YZ_2')
         if iy == extreme_coords[1] and jy == extreme_coords[1]:
-            self.views.append('Y1')
+            self.views.append('XZ_1')
         if iy == extreme_coords[4] and jy == extreme_coords[4]:
-            self.views.append('Y2')
+            self.views.append('XZ_2')
         if iz == extreme_coords[2] and jz == extreme_coords[2]:
-            self.views.append('Z1')
+            self.views.append('XY_1')
         if iz == extreme_coords[5] and jz == extreme_coords[5]:
-            self.views.append('Z2')
+            self.views.append('XY_2')
 
 @dataclass
 class Shape:
